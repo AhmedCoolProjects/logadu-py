@@ -14,8 +14,7 @@ import os
 @click.option("--short-threshold", default=5, help="Minimum log length")
 @click.option("--log-format", help="Log format for Spell parser", default="<Content>")
 @click.option("--tau", help="Threshold for Spell parser", default=0.5, type=float)
-@click.option("--keep-parameters/--no-parameters", default=True, 
-              help="Include extracted parameters in output")
+@click.option("--keep-parameters/--no-parameters", default=True, help="Include extracted parameters in output")
 def parse(log_file, parser, leaf_num, short_threshold, log_format, tau, keep_parameters, depth, max_children):
     """Parse log files using specified parser"""
     if parser == "ft-tree":
