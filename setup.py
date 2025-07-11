@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
-# with open("README.md", "r", encoding="utf-8") as fh:
-#     long_description = fh.read()
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
 
 # Make pygraphviz optional
 
@@ -20,11 +20,11 @@ extras_require = {
 
 setup(
     name="logadu",
-    version="0.2.2", # You can update this as you add features
+    version="0.2.3", # You can update this as you add features
     author="Ahmed BARGADY",  # ADDED: Your name
     author_email="ahmed.bargady@um6p.ma", # ADDED: Your email
     description="Log Anomaly Detection Ultimate: A package for log parsing, feature representation, and model training.", # ADDED
-    # long_description=long_description, # ADDED
+    long_description=long_description, # ADDED
     long_description_content_type="text/markdown", # ADDED
     url="https://github.com/AhmedCoolProjects/logadu-py", # ADDED
     packages=find_packages(),
