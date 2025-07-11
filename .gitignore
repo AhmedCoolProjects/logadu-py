@@ -5,6 +5,7 @@ __pycache__/
 
 dataset
 out_models
+out_models_2
 # C extensions
 *.so
 
