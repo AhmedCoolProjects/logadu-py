@@ -4,14 +4,15 @@ import pandas as pd
 from tqdm import tqdm
 import pickle
 import os
+from pathlib import Path
 
-def generate_sequences(structured_log_file, output_dir, method, session_col=None, window_size=None, step_size=None):
+def generate_sequences(log_file, method, session_col=None, window_size=10, step_size=1):
     """
     Generates sequences from structured log data using either session-based or window-based grouping.
 
     Args:
-        structured_log_file (str): Path to the structured log CSV file.
-        output_dir (str): The directory to save the output files.
+        log_file (str): Path to the structured log CSV file.
+        
         method (str): Grouping method, either 'session' or 'window'.
         session_col (str, optional): The column name for session grouping. Required if method is 'session'.
         window_size (int, optional): The size of the sliding window. Required if method is 'window'.
@@ -19,27 +20,28 @@ def generate_sequences(structured_log_file, output_dir, method, session_col=None
     """
     print(f"Generating sequences using '{method}' method...")
 
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
 
-    df = pd.read_csv(structured_log_file)
+    df = pd.read_csv(log_file)
+    _parent = Path(log_file).parent
+    _name = Path(log_file).stem
+    _name = _name.split('_')[0]
+    output_dir = _parent / 'sequences'
     
-    # Ensure 'Label' column exists and fill NaNs if necessary
-    if 'Label' not in df.columns:
-        df['Label'] = 'normal' # Assume normal if no labels are present
-    else:
-        df['Label'] = df['Label'].fillna('normal')
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True, exist_ok=True)
+    
+    if 'label' not in df.columns or 'EventId' not in df.columns:
+        raise ValueError("Input CSV must contain 'label' and 'EventId' columns.")
 
     session_data = {}
 
+    # TODO: not verified yet
     if method == 'session':
         if not session_col:
             raise ValueError("session_col must be provided for 'session' method.")
         session_data = _group_by_session(df, session_col)
     
     elif method == 'window':
-        if not window_size or not step_size:
-            raise ValueError("window_size and step_size must be provided for 'window' method.")
         session_data = _group_by_window(df, window_size, step_size)
     
     else:
@@ -47,7 +49,7 @@ def generate_sequences(structured_log_file, output_dir, method, session_col=None
 
     print(f"Generated {len(session_data)} sequences.")
     
-    sequences_file = os.path.join(output_dir, 'log_sequences.pkl')
+    sequences_file = os.path.join(output_dir, f'{_name}_{window_size}_{step_size}.pkl')
     with open(sequences_file, 'wb') as f:
         pickle.dump(session_data, f)
     
@@ -68,7 +70,7 @@ def _group_by_window(df, window_size, step_size):
     """ Helper function for sliding window-based grouping. """
     session_data = {}
     event_ids = df['EventId'].tolist()
-    labels = (df['Label'] == 'abnormal').astype(int).tolist()
+    labels = df['label'].tolist()
     
     num_events = len(event_ids)
     for i in tqdm(range(0, num_events - window_size + 1, step_size), desc="Generating sliding windows"):

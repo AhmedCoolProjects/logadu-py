@@ -1,5 +1,8 @@
 from setuptools import setup, find_packages
 
+# with open("README.md", "r", encoding="utf-8") as fh:
+#     long_description = fh.read()
+
 # Make pygraphviz optional
 
 install_requires = [
@@ -8,6 +11,7 @@ install_requires = [
     'tqdm>=4.0',
     'regex>=2020.0',
     'numpy>=1.0',
+    'torch>=2.3.1'
 ]
 
 extras_require = {
@@ -16,7 +20,13 @@ extras_require = {
 
 setup(
     name="logadu",
-    version="0.1.1",
+    version="0.2.2", # You can update this as you add features
+    author="Ahmed BARGADY",  # ADDED: Your name
+    author_email="ahmed.bargady@um6p.ma", # ADDED: Your email
+    description="Log Anomaly Detection Ultimate: A package for log parsing, feature representation, and model training.", # ADDED
+    # long_description=long_description, # ADDED
+    long_description_content_type="text/markdown", # ADDED
+    url="https://github.com/AhmedCoolProjects/logadu-py", # ADDED
     packages=find_packages(),
     install_requires=install_requires,
     extras_require=extras_require,
@@ -25,4 +35,12 @@ setup(
             'logadu=logadu.cli.main:cli',
         ],
     },
+    classifiers=[ # ADDED: Helps users find your project
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License", # Assuming MIT, change if needed
+        "Operating System :: OS Independent",
+        "Intended Audience :: Science/Research",
+        "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    ],
+    python_requires='>=3.8', # Specify minimum Python version
 )
