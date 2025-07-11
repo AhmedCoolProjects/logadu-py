@@ -1,0 +1,44 @@
+# .github/workflows/workflow.yml
+
+name: Publish Python Package to PyPI
+
+# This workflow runs when a new release is created in the GitHub UI.
+# This gives you manual control over when you publish a new version.
+on:
+  release:
+    types: [created]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    # Required for Trusted Publishing. This gives the workflow permission
+    # to request a short-lived OIDC token from GitHub.
+    permissions:
+      id-token: write
+
+    steps:
+    # 1. Checkout the repository's code
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # 2. Set up a specific version of Python
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.8' # Use a version compatible with your package
+
+    # 3. Install build dependencies
+    # These are the tools needed to build your package from source.
+    - name: Install build dependencies
+      run: python -m pip install --upgrade build twine
+
+    # 4. Build the package
+    # This command creates the distributable files (sdist and wheel) in a 'dist' directory.
+    - name: Build package
+      run: python -m build
+
+    # 5. Publish package to PyPI using the official GitHub Action
+    # This action handles the secure authentication with PyPI via Trusted Publishing.
+    - name: Publish package to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
