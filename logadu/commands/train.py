@@ -5,16 +5,20 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.loggers import WandbLogger
 import wandb
+import torch # ADD THIS
+
+# ADD THIS LINE TO ENABLE TENSOR CORES FOR FASTER TRAINING
+torch.set_float32_matmul_precision('high') 
 
 # Import all modules
 from logadu.logic.deeplog_datamodule import DeepLogDataModule
 from logadu.logic.deeplog_lightning import DeepLogLightning
 from logadu.logic.logrobust_datamodule import LogRobustDataModule
 from logadu.logic.logrobust_lightning import LogRobustLightning
+from logadu.logic.autoencoder_lightning import AutoEncoderLightning
 
 @click.command()
 @click.argument("dataset_file", type=click.Path(exists=True))
-@click.option("--model", required=True, type=click.Choice(['deeplog', 'logrobust']), help="Model to train.")
 @click.option("--batch-size", default=128, help="Batch size for training.")
 @click.option("--epochs", default=50, help="Number of epochs for training.")
 @click.option("--learning-rate", default=0.001, help="Learning rate for optimizer.")
@@ -25,7 +29,11 @@ from logadu.logic.logrobust_lightning import LogRobustLightning
 @click.option("--wandb-run-name", default=None, help="W&B run name.")
 # --- ADD LOGROBUST-SPECIFIC OPTIONS ---
 @click.option("--embedding-dim", default=300, help="[LogRobust] Dimension of word embeddings.")
-def train(dataset_file, model, batch_size, epochs, learning_rate, hidden_size, num_layers, output_dir, wandb_project, wandb_run_name, embedding_dim):
+# --- ADD 'autoencoder' TO THE CHOICE LIST ---
+@click.option("--model", required=True, type=click.Choice(['deeplog', 'logrobust', 'autoencoder']), help="Model to train.")
+# --- ADD AUTOENCODER-SPECIFIC OPTIONS ---
+@click.option("--latent-dim", default=32, help="[AutoEncoder] Dimension of the bottleneck layer.")
+def train(dataset_file, model, batch_size, epochs, learning_rate, hidden_size, num_layers, output_dir, wandb_project, wandb_run_name, embedding_dim, latent_dim):
     """Train a log anomaly detection model using PyTorch Lightning."""
     
     wandb_logger = WandbLogger(project=wandb_project, name=wandb_run_name, log_model="all")
@@ -64,7 +72,24 @@ def train(dataset_file, model, batch_size, epochs, learning_rate, hidden_size, n
             
             # Note: For full LogRobust, you would load pre-trained embeddings here
             # and assign them to lightning_model.model.embedding.weight
+        # --- ADD THE NEW AUTOENCODER BLOCK ---
+        elif model.lower() == "autoencoder":
+            if not dataset_file.endswith('_vectors.pt'):
+                raise click.UsageError("For AutoEncoder, the input file must be a pre-computed vector file ending in '_vectors.pt'. "
+                                       "Please run the 'represent' command first.")
+            
+            click.secho(f"Initializing AutoEncoder training on pre-computed vectors...", fg="yellow")
+            
+            # Reuse the LogRobustDataModule
+            data_module = LogRobustDataModule(vectorized_file=dataset_file, batch_size=batch_size)
+            data_module.setup()
 
+            lightning_model = AutoEncoderLightning(
+                input_dim=data_module.input_dim,
+                hidden_dim=hidden_size, # Reusing the --hidden-size parameter
+                latent_dim=latent_dim,
+                learning_rate=learning_rate
+            )
         else:
             raise click.UsageError("Invalid model specified.")
             
