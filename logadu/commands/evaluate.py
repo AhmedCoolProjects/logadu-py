@@ -1,11 +1,11 @@
 # /logadu/commands/evaluate.py
 
 import click
-from logadu.logic.traditional_logic import evaluate_pca, evaluate_rf
+from logadu.logic.traditional_logic import evaluate_pca, evaluate_rf, evaluate_knn
 
 @click.command()
 @click.argument("vector_file", type=click.Path(exists=True))
-@click.option("--model", required=True, type=click.Choice(['pca', 'rf']), help="Traditional model to evaluate.")
+@click.option("--model", required=True, type=click.Choice(['pca', 'rf', 'knn']), help="Traditional model to evaluate.")
 @click.option("--output-dir", default="models", help="Directory to save the trained model.")
 def evaluate(vector_file, model, output_dir):
     """
@@ -18,5 +18,7 @@ def evaluate(vector_file, model, output_dir):
         evaluate_pca(vector_file, output_dir)
     elif model.lower() == 'rf':
         evaluate_rf(vector_file, output_dir)
+    elif model.lower() == 'knn':
+        evaluate_knn(vector_file, output_dir)
     else:
         click.echo(f"Model '{model}' not yet implemented.")

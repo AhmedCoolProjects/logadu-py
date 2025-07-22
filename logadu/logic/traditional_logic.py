@@ -12,6 +12,7 @@ import os
 import click
 from sklearn.ensemble import RandomForestClassifier # ADD THIS
 from sklearn.model_selection import train_test_split # ADD THIS
+from sklearn.neighbors import KNeighborsClassifier
 
 def _prepare_data_from_vectors(vector_file):
     """ Loads and prepares data for sklearn models by averaging sequence vectors. """
@@ -119,3 +120,41 @@ def evaluate_rf(vector_file, output_dir):
     model_path = os.path.join(output_dir, "random_forest_model.joblib")
     joblib.dump(rf, model_path)
     click.echo(f"Saved trained Random Forest model to: {model_path}")
+    
+def evaluate_knn(vector_file, output_dir):
+    """ Trains and evaluates a K-Nearest Neighbors model for anomaly detection. """
+    X, y = _prepare_data_from_vectors(vector_file)
+    
+    # --- Data Splitting (Same as for Random Forest) ---
+    click.echo("Splitting data into training (70%) and testing (30%) sets...")
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.3, random_state=42, stratify=y
+    )
+    click.echo(f"Training on {len(X_train)} samples, testing on {len(X_test)} samples.")
+
+    # --- Model Training ---
+    # n_neighbors=5 is a common and effective default for 'k'.
+    # This is a key hyperparameter you could expose as a CLI option later.
+    click.echo("Training K-Nearest Neighbors model (k=5)...")
+    knn = KNeighborsClassifier(n_neighbors=5, n_jobs=-1)
+    # For KNN, "fit" is very fast as it's a "lazy" learner that just stores the data.
+    knn.fit(X_train, y_train)
+    click.echo("Model training complete.")
+
+    # --- Prediction ---
+    # This step can be slow for KNN, as it calculates distances to the training data.
+    click.echo("Making predictions on the test set...")
+    predictions = knn.predict(X_test)
+    
+    # --- Evaluation ---
+    precision, recall, f1, _ = precision_recall_fscore_support(y_test, predictions, average='binary')
+    click.secho("\n--- K-Nearest Neighbors (KNN) Evaluation Results ---", fg="green")
+    click.echo(f"Precision: {precision:.4f}")
+    click.echo(f"Recall:    {recall:.4f}")
+    click.echo(f"F1-Score:  {f1:.4f}")
+    
+    # --- Save the trained model ---
+    os.makedirs(output_dir, exist_ok=True)
+    model_path = os.path.join(output_dir, "knn_model.joblib")
+    joblib.dump(knn, model_path)
+    click.echo(f"Saved trained KNN model to: {model_path}")
