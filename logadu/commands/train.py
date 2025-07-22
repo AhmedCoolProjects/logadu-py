@@ -4,11 +4,11 @@ import click
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.loggers import WandbLogger
+
 import wandb
 import torch # ADD THIS
 
-# ADD THIS LINE TO ENABLE TENSOR CORES FOR FASTER TRAINING
-torch.set_float32_matmul_precision('high') 
+
 
 # Import all modules
 from logadu.logic.deeplog_datamodule import DeepLogDataModule
@@ -16,6 +16,11 @@ from logadu.logic.deeplog_lightning import DeepLogLightning
 from logadu.logic.logrobust_datamodule import LogRobustDataModule
 from logadu.logic.logrobust_lightning import LogRobustLightning
 from logadu.logic.autoencoder_lightning import AutoEncoderLightning
+from logadu.logic.logbert_datamodule import LogBERTDataModule
+from logadu.logic.logbert_lightning import LogBERTLightning
+
+# ADD THIS LINE TO ENABLE TENSOR CORES FOR FASTER TRAINING
+torch.set_float32_matmul_precision('high') 
 
 @click.command()
 @click.argument("dataset_file", type=click.Path(exists=True))
@@ -28,13 +33,17 @@ from logadu.logic.autoencoder_lightning import AutoEncoderLightning
 @click.option("--wandb-project", required=True, help="W&B project name to log runs to.")
 @click.option("--wandb-run-name", default=None, help="W&B run name.")
 # --- ADD LOGROBUST-SPECIFIC OPTIONS ---
-@click.option("--embedding-dim", default=300, help="[LogRobust] Dimension of word embeddings.")
+@click.option("--embedding-dim", default=128, help="Dimension of embeddings for semantic models (LogRobust, LogBERT).")
 # --- ADD 'autoencoder' TO THE CHOICE LIST ---
-@click.option("--model", required=True, type=click.Choice(['deeplog', 'logrobust', 'autoencoder']), help="Model to train.")
+@click.option("--model", required=True, type=click.Choice(['deeplog', 'logrobust', 'logbert', 'autoencoder']), help="Model to train.")
 # --- ADD AUTOENCODER-SPECIFIC OPTIONS ---
 @click.option("--latent-dim", default=32, help="[AutoEncoder] Dimension of the bottleneck layer.")
-def train(dataset_file, model, batch_size, epochs, learning_rate, hidden_size, num_layers, output_dir, wandb_project, wandb_run_name, embedding_dim, latent_dim):
-    """Train a log anomaly detection model using PyTorch Lightning."""
+@click.option("--alpha", default=1.0, help="[LogBERT] Weight for the VHM loss.")
+@click.option("--num-attention-heads", default=4, help="[LogBERT] Number of attention heads.")
+def train(dataset_file, model, batch_size, epochs, learning_rate, hidden_size, num_layers, 
+          output_dir, wandb_project, wandb_run_name, embedding_dim, latent_dim, alpha, num_attention_heads):
+    """Train a log anomaly detection model."""
+
     
     wandb_logger = WandbLogger(project=wandb_project, name=wandb_run_name, log_model="all")
     
@@ -90,6 +99,26 @@ def train(dataset_file, model, batch_size, epochs, learning_rate, hidden_size, n
                 latent_dim=latent_dim,
                 learning_rate=learning_rate
             )
+        if model.lower() == "logbert":
+            # Input must be an index-based sequence file for LogBERT
+            if not dataset_file.endswith('_seq.csv') and not dataset_file.endswith('_seq_index.csv'):
+                 raise click.UsageError("For LogBERT, the input file must be an index-based sequence CSV.")
+
+            click.secho(f"Initializing self-supervised LogBERT training...", fg="yellow")
+            
+            data_module = LogBERTDataModule(dataset_file=dataset_file, batch_size=batch_size)
+            data_module.setup() 
+            
+            lightning_model = LogBERTLightning(
+                vocab_size=len(data_module.vocab),
+                embedding_dim=embedding_dim, # Pass the parameter here
+                hidden_size=hidden_size,
+                num_layers=num_layers,
+                num_attention_heads=num_attention_heads,
+                alpha=alpha,
+                learning_rate=learning_rate
+            )
+        
         else:
             raise click.UsageError("Invalid model specified.")
             
@@ -105,8 +134,8 @@ def train(dataset_file, model, batch_size, epochs, learning_rate, hidden_size, n
         click.echo("\n--- Starting Training & Validation ---")
         trainer.fit(lightning_model, datamodule=data_module)
 
-        click.echo("\n--- Starting Testing ---")
-        trainer.test(datamodule=data_module, ckpt_path='best')
+        # click.echo("\n--- Starting Testing ---")
+        # trainer.test(datamodule=data_module, ckpt_path='best')
 
     finally:
         wandb.finish()

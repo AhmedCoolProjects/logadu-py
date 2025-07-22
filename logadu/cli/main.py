@@ -4,6 +4,8 @@ from logadu.commands.merge import merge
 from logadu.commands.seq import seq
 from logadu.commands.train import train
 from logadu.commands.represent import represent
+from logadu.commands.predict import predict
+from logadu.commands.evaluate import evaluate
 
 @click.group()
 def cli():
@@ -23,3 +25,7 @@ cli.add_command(seq)
 cli.add_command(represent) # ADD THIS
 # Training
 cli.add_command(train)
+# Prediction
+cli.add_command(predict)
+# Evaluation
+cli.add_command(evaluate)

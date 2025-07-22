@@ -16,11 +16,12 @@ install_requires = [
     'regex>=2020.0',
     'numpy>=1.0',
     'torch>=2.3.1',
-    'pytorch-lightning>=2.0',  # ADD THIS
-    'torchmetrics>=1.0',      # ADD THIS
+    'pytorch-lightning>=2.0',
+    'torchmetrics>=1.0',    
     'scikit-learn>=1.0',
     'gensim>=4.0',
-    'wandb>=0.15'  # ADD THIS
+    'wandb>=0.15',
+    'joblib>=1.0'
 ]
 
 extras_require = {
