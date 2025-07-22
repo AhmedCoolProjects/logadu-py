@@ -21,7 +21,9 @@ install_requires = [
     'scikit-learn>=1.0',
     'gensim>=4.0',
     'wandb>=0.15',
-    'joblib>=1.0'
+    'joblib>=1.0',
+    'transformers>=4.0',   # ADD THIS
+    'sentencepiece>=0.1'   # ADD THIS
 ]
 
 extras_require = {

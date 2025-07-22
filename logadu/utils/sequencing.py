@@ -61,7 +61,14 @@ def create_seq_vectors_for_file(file_path, window_size=10, step_size=1, output_f
             return
         # Use the EventTemplate strings directly as the source sequence
         source_sequence = df['EventTemplate'].tolist()
-
+    elif output_format == 'raw':
+        click.echo("Generating sequences of raw log messages from 'content' column.")
+        if 'content' not in df.columns:
+            click.secho("Error: 'content' column not found. Please ensure your parsed CSV has a 'content' column for raw messages.", fg="red")
+            return
+        # Use the raw content strings directly
+        source_sequence = df['content'].tolist()
+        
     labels = df['label'].tolist()
     print(f"Successfully loaded {len(source_sequence)} log events.")
 
@@ -85,7 +92,7 @@ def create_seq_vectors_for_file(file_path, window_size=10, step_size=1, output_f
 
     # The 'sequences' column can hold either lists of ints or lists of strings
     # For LogRobust, we use the EventSequence and Label column names
-    if output_format == 'template':
+    if output_format in ['template', 'raw']:
         output_df = pd.DataFrame({'EventSequence': X, 'Label': L})
     else:
         output_df = pd.DataFrame({'sequences': X, 'next': y, 'label': L})

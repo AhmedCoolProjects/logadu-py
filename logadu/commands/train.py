@@ -18,6 +18,8 @@ from logadu.logic.logrobust_lightning import LogRobustLightning
 from logadu.logic.autoencoder_lightning import AutoEncoderLightning
 from logadu.logic.logbert_datamodule import LogBERTDataModule
 from logadu.logic.logbert_lightning import LogBERTLightning
+from logadu.logic.neurallog_lightning import NeuralLogLightning
+
 
 # ADD THIS LINE TO ENABLE TENSOR CORES FOR FASTER TRAINING
 torch.set_float32_matmul_precision('high') 
@@ -35,7 +37,7 @@ torch.set_float32_matmul_precision('high')
 # --- ADD LOGROBUST-SPECIFIC OPTIONS ---
 @click.option("--embedding-dim", default=128, help="Dimension of embeddings for semantic models (LogRobust, LogBERT).")
 # --- ADD 'autoencoder' TO THE CHOICE LIST ---
-@click.option("--model", required=True, type=click.Choice(['deeplog', 'logrobust', 'logbert', 'autoencoder']), help="Model to train.")
+@click.option("--model", required=True, type=click.Choice(['deeplog', 'logrobust', 'logbert', 'autoencoder', 'neurallog']), help="Model to train.")
 # --- ADD AUTOENCODER-SPECIFIC OPTIONS ---
 @click.option("--latent-dim", default=32, help="[AutoEncoder] Dimension of the bottleneck layer.")
 @click.option("--alpha", default=1.0, help="[LogBERT] Weight for the VHM loss.")
@@ -118,7 +120,24 @@ def train(dataset_file, model, batch_size, epochs, learning_rate, hidden_size, n
                 alpha=alpha,
                 learning_rate=learning_rate
             )
-        
+        elif model.lower() == "neurallog":
+            if not dataset_file.endswith('_neurallog.pt'):
+                raise click.UsageError("For NeuralLog, the input file must be a pre-computed vector file from the 'represent --model neurallog' command.")
+
+            click.secho(f"Initializing NeuralLog training...", fg="yellow")
+            
+            # We can reuse the same DataModule as LogRobust
+            data_module = LogRobustDataModule(vectorized_file=dataset_file, batch_size=batch_size)
+            data_module.setup()
+
+            lightning_model = NeuralLogLightning(
+                input_dim=data_module.input_dim,
+                hidden_dim=hidden_size, # Reusing --hidden-size
+                num_layers=num_layers,
+                num_attention_heads=num_attention_heads,
+                learning_rate=learning_rate
+            )
+            
         else:
             raise click.UsageError("Invalid model specified.")
             

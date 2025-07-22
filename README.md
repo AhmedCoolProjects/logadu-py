@@ -67,3 +67,10 @@ This category represents the cutting edge, leveraging large-scale, pre-trained m
 logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/preprocessing/Linux24APT/drain/Linux24APT_10_1_seq_template_vectors.pt -output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "logrobust_Linux24_seq_10_1" --model logrobust
 
 logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/preprocessing/Linux24APT/drain/Linux24APT_10_1_seq_template_vectors.pt --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "Autoencoder_Linux24_seq_10_1" --model autoencoder
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/preprocessing/Linux24APT/drain/Linux24APT_10_1_seq_raw_vectors_neurallog.pt \
+--model neurallog \
+--epochs 50 \
+--output-dir ./trained_models \
+--wandb-project "lad_in_apts" \
+--wandb-run-name "neurallog_Linux_run1"

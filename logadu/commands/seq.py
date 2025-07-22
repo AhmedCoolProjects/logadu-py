@@ -11,10 +11,10 @@ from pathlib import Path
 # --- MODIFIED OPTION ---
 # Replaced --nbr_indexes with a more explicit --output-format option
 @click.option("--output-format", 
-              type=click.Choice(['index', 'template']), 
+              type=click.Choice(['index', 'template', 'raw']), 
               default='index', 
               show_default=True,
-              help="Output format: 'index' for EventId keys, 'template' for EventTemplate text.")
+              help="Output format: 'index', 'template' text, or 'raw' log messages.")
 def seq(log_file, window_size, step_size, output_format):
     """Generate sequences from structured log data."""
     
