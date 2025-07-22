@@ -1,19 +1,21 @@
-from logadu.utils.sequencing import generate_sequences, create_sequential_vectors
+# /logadu/commands/seq.py
+
+from logadu.utils.sequencing import create_sequential_vectors
 import click
 from pathlib import Path
 
 @click.command()
 @click.argument("log_file", type=click.Path(exists=True))
-# @click.option("--method", type=click.Choice(['session', 'window']), required=True,
-            #   help="Method to generate sequences: 'session' for session-based or 'window' for sliding window-based grouping.")
-# @click.option("--session_col", type=str, help="Column name for session grouping (required if method is 'session').")
-@click.option("--window_size", type=int, default=10,
-              help="Size of the sliding window (required if method is 'window').")
-@click.option("--step_size", type=int, default=1,
-              help="Step size for the sliding window (required if method is 'window').")
-@click.option("--nbr_indexes", is_flag=True, default=True,
-              help="If set, replaces EventIds with unique incremental indexes and saves the mapping in a pickle file.")
-def seq(log_file, window_size, step_size, nbr_indexes):
+@click.option("--window_size", type=int, default=10, help="Size of the sliding window.")
+@click.option("--step_size", type=int, default=1, help="Step size for the sliding window.")
+# --- MODIFIED OPTION ---
+# Replaced --nbr_indexes with a more explicit --output-format option
+@click.option("--output-format", 
+              type=click.Choice(['index', 'template']), 
+              default='index', 
+              show_default=True,
+              help="Output format: 'index' for EventId keys, 'template' for EventTemplate text.")
+def seq(log_file, window_size, step_size, output_format):
     """Generate sequences from structured log data."""
     
     _name = Path(log_file).name
@@ -24,9 +26,6 @@ def seq(log_file, window_size, step_size, nbr_indexes):
     else:
         click.echo(f"Processing file: {_name}")
         
-
-    create_sequential_vectors(log_file, is_dir, window_size, step_size, nbr_indexes)
+    # Pass the new option to the logic function
+    create_sequential_vectors(log_file, is_dir, window_size, step_size, output_format)
     click.echo(f"Sequences generated and saved")
-
-# Example usage in command line:
-# logadu seq /path/to/structured_log.csv --method window --window_size 10 --step_size 1

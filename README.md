@@ -59,3 +59,9 @@ This category represents the cutting edge, leveraging large-scale, pre-trained m
 - Retrieval-Augmented Dense Vectors (RAGLog): RAGLog \cite{Pan_RAGLog_2024} uses a fundamentally different paradigm. Here, feature representation is designed for retrieval, not direct classification. Normal log templates are encoded into dense vectors using a state-of-the-art embedding model (e.g., from OpenAI, Hugging Face) and stored in a vector database. The "feature" of a new log message is its own vector embedding, which is then used to query the database for semantically similar normal logs. The anomaly decision is made by a Large Language Model (LLM) based on the retrieved results.
 
 ## Sequence Construction
+
+# Notes
+
+/home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/preprocessing/Linux24APT/drain/Linux24APT_10_1_seq_template_vectors.pt
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/preprocessing/Linux24APT/drain/Linux24APT_10_1_seq_template_vectors.pt -output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "logrobust_Linux24_seq_10_1" --model logrobust

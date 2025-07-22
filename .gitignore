@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 
 wandb
+trained_models
 
 dataset
 out_models

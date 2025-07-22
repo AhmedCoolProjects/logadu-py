@@ -19,6 +19,7 @@ install_requires = [
     'pytorch-lightning>=2.0',  # ADD THIS
     'torchmetrics>=1.0',      # ADD THIS
     'scikit-learn>=1.0',
+    'gensim>=4.0',
     'wandb>=0.15'  # ADD THIS
 ]
 

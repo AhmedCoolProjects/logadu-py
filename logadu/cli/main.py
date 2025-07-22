@@ -3,6 +3,7 @@ from logadu.commands.parse import parse
 from logadu.commands.merge import merge
 from logadu.commands.seq import seq
 from logadu.commands.train import train
+from logadu.commands.represent import represent
 
 @click.group()
 def cli():
@@ -19,5 +20,6 @@ cli.add_command(seq)
 # cli.add_command(quant)
 ## Semantic vectors
 # cli.add_command(semantic)
+cli.add_command(represent) # ADD THIS
 # Training
 cli.add_command(train)
