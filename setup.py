@@ -2,8 +2,12 @@ from setuptools import setup, find_packages
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
+    
+__version__ = "0.2.6"  # Update this version as needed
 
 # Make pygraphviz optional
+
+# In your setup.py file
 
 install_requires = [
     'click>=7.0',
@@ -11,7 +15,11 @@ install_requires = [
     'tqdm>=4.0',
     'regex>=2020.0',
     'numpy>=1.0',
-    'torch>=2.3.1'
+    'torch>=2.3.1',
+    'pytorch-lightning>=2.0',  # ADD THIS
+    'torchmetrics>=1.0',      # ADD THIS
+    'scikit-learn>=1.0',
+    'wandb>=0.15'  # ADD THIS
 ]
 
 extras_require = {
@@ -20,7 +28,7 @@ extras_require = {
 
 setup(
     name="logadu",
-    version="0.2.3", # You can update this as you add features
+    version=__version__,
     author="Ahmed BARGADY",  # ADDED: Your name
     author_email="ahmed.bargady@um6p.ma", # ADDED: Your email
     description="Log Anomaly Detection Ultimate: A package for log parsing, feature representation, and model training.", # ADDED

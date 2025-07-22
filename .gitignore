@@ -3,6 +3,8 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+wandb
+
 dataset
 out_models
 out_models_2
