@@ -23,13 +23,13 @@ class DrainNode:
 class DrainParser:
     """Drain log parser implementation"""
     
-    def __init__(self, depth: int = 4, sim_threshold: float = 0.4, 
+    def __init__(self, depth: int = 4, sim_threshold: float = 0.5, 
                  max_children: int = 100, rex: List[str] = None, 
-                 keep_para: bool = True):
+                 keep_para: bool = False):
         """
         Args:
             depth: Depth of the prefix tree (default: 4)
-            sim_threshold: Similarity threshold (0-1) (default: 0.4)
+            sim_threshold: Similarity threshold (0-1) (default: 0.5)
             max_children: Maximum children per node (default: 100)
             rex: List of regex patterns for preprocessing
             keep_para: Whether to keep parameters in output

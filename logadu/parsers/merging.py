@@ -34,11 +34,7 @@ def merge_logs(in_dir, file_name, parser):
         print(f"Original file has {len(df_original)} rows.")
         print("Proceeding, but this may lead to incorrect merges.")
 
-    # --- Select and combine the necessary columns ---
-    # We need EventId from the structured file.
-    # We need the label and the session ID from the original file.
     
-    org_cols = df_original.columns.tolist()
         
     # Create the merged DataFrame by adding the new columns from the structured file to the original file
     merged_df = df_original.copy()

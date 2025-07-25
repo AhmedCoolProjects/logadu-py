@@ -61,3 +61,7 @@ def parse(log_file, parser, leaf_num, short_threshold, log_format, tau, keep_par
         )
     else:
         click.echo(f"Parser {parser} not recognized", err=True)
+
+
+# EXAMPLE:
+# ogadu parse ../../x.log --parser drain --no-parameters
