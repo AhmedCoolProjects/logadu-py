@@ -1,9 +1,10 @@
 # /logadu/commands/train.py
 
 import click
-import pytorch_lightning as pl
-from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
+# import pytorch_lightning as pl
+# from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.loggers import WandbLogger
+from logadu.trainer.deeplog import train_deeplog
 
 import wandb
 import torch # ADD THIS
@@ -11,8 +12,8 @@ import torch # ADD THIS
 
 
 # Import all modules
-from logadu.logic.deeplog_datamodule import DeepLogDataModule
-from logadu.logic.deeplog_lightning import DeepLogLightning
+# from logadu.logic.deeplog_datamodule import DeepLogDataModule
+# from logadu.logic.deeplog_lightning import DeepLogLightning
 from logadu.logic.logrobust_datamodule import LogRobustDataModule
 from logadu.logic.logrobust_lightning import LogRobustLightning
 from logadu.logic.autoencoder_lightning import AutoEncoderLightning
@@ -53,13 +54,15 @@ def train(dataset_file, model, batch_size, epochs, learning_rate, hidden_size, n
         # --- MODEL DISPATCHER ---
         if model.lower() == "deeplog":
             click.secho(f"Initializing DeepLog training...", fg="yellow")
-            data_module = DeepLogDataModule(dataset_file=dataset_file, batch_size=batch_size)
-            data_module.setup() 
+            train_deeplog(dataset_file, epochs, batch_size, top_k=9, output_model_path=f"{output_dir}/deeplog_model.pth")
+
+            # data_module = DeepLogDataModule(dataset_file=dataset_file, batch_size=batch_size)
+            # data_module.setup() 
             
-            lightning_model = DeepLogLightning(
-                input_size=1, hidden_size=hidden_size, num_layers=num_layers,
-                num_keys=data_module.num_classes, learning_rate=learning_rate
-            )
+            # lightning_model = DeepLogLightning(
+            #     input_size=1, hidden_size=hidden_size, num_layers=num_layers,
+            #     num_keys=data_module.num_classes, learning_rate=learning_rate
+            # )
 
         # --- LOGROBUST TRAINING ---
         elif model.lower() == "logrobust":
@@ -84,74 +87,74 @@ def train(dataset_file, model, batch_size, epochs, learning_rate, hidden_size, n
             # Note: For full LogRobust, you would load pre-trained embeddings here
             # and assign them to lightning_model.model.embedding.weight
         # --- ADD THE NEW AUTOENCODER BLOCK ---
-        elif model.lower() == "autoencoder":
-            if not dataset_file.endswith('_vectors.pt'):
-                raise click.UsageError("For AutoEncoder, the input file must be a pre-computed vector file ending in '_vectors.pt'. "
-                                       "Please run the 'represent' command first.")
+        # elif model.lower() == "autoencoder":
+        #     if not dataset_file.endswith('_vectors.pt'):
+        #         raise click.UsageError("For AutoEncoder, the input file must be a pre-computed vector file ending in '_vectors.pt'. "
+        #                                "Please run the 'represent' command first.")
             
-            click.secho(f"Initializing AutoEncoder training on pre-computed vectors...", fg="yellow")
+        #     click.secho(f"Initializing AutoEncoder training on pre-computed vectors...", fg="yellow")
             
-            # Reuse the LogRobustDataModule
-            data_module = LogRobustDataModule(vectorized_file=dataset_file, batch_size=batch_size)
-            data_module.setup()
+        #     # Reuse the LogRobustDataModule
+        #     data_module = LogRobustDataModule(vectorized_file=dataset_file, batch_size=batch_size)
+        #     data_module.setup()
 
-            lightning_model = AutoEncoderLightning(
-                input_dim=data_module.input_dim,
-                hidden_dim=hidden_size, # Reusing the --hidden-size parameter
-                latent_dim=latent_dim,
-                learning_rate=learning_rate
-            )
-        if model.lower() == "logbert":
-            # Input must be an index-based sequence file for LogBERT
-            if not dataset_file.endswith('_seq.csv') and not dataset_file.endswith('_seq_index.csv'):
-                 raise click.UsageError("For LogBERT, the input file must be an index-based sequence CSV.")
+        #     lightning_model = AutoEncoderLightning(
+        #         input_dim=data_module.input_dim,
+        #         hidden_dim=hidden_size, # Reusing the --hidden-size parameter
+        #         latent_dim=latent_dim,
+        #         learning_rate=learning_rate
+        #     )
+        # if model.lower() == "logbert":
+        #     # Input must be an index-based sequence file for LogBERT
+        #     if not dataset_file.endswith('_seq.csv') and not dataset_file.endswith('_seq_index.csv'):
+        #          raise click.UsageError("For LogBERT, the input file must be an index-based sequence CSV.")
 
-            click.secho(f"Initializing self-supervised LogBERT training...", fg="yellow")
+        #     click.secho(f"Initializing self-supervised LogBERT training...", fg="yellow")
             
-            data_module = LogBERTDataModule(dataset_file=dataset_file, batch_size=batch_size)
-            data_module.setup() 
+        #     data_module = LogBERTDataModule(dataset_file=dataset_file, batch_size=batch_size)
+        #     data_module.setup() 
             
-            lightning_model = LogBERTLightning(
-                vocab_size=len(data_module.vocab),
-                embedding_dim=embedding_dim, # Pass the parameter here
-                hidden_size=hidden_size,
-                num_layers=num_layers,
-                num_attention_heads=num_attention_heads,
-                alpha=alpha,
-                learning_rate=learning_rate
-            )
-        elif model.lower() == "neurallog":
-            if not dataset_file.endswith('_neurallog.pt'):
-                raise click.UsageError("For NeuralLog, the input file must be a pre-computed vector file from the 'represent --model neurallog' command.")
+        #     lightning_model = LogBERTLightning(
+        #         vocab_size=len(data_module.vocab),
+        #         embedding_dim=embedding_dim, # Pass the parameter here
+        #         hidden_size=hidden_size,
+        #         num_layers=num_layers,
+        #         num_attention_heads=num_attention_heads,
+        #         alpha=alpha,
+        #         learning_rate=learning_rate
+        #     )
+        # elif model.lower() == "neurallog":
+        #     if not dataset_file.endswith('_neurallog.pt'):
+        #         raise click.UsageError("For NeuralLog, the input file must be a pre-computed vector file from the 'represent --model neurallog' command.")
 
-            click.secho(f"Initializing NeuralLog training...", fg="yellow")
+        #     click.secho(f"Initializing NeuralLog training...", fg="yellow")
             
-            # We can reuse the same DataModule as LogRobust
-            data_module = LogRobustDataModule(vectorized_file=dataset_file, batch_size=batch_size)
-            data_module.setup()
+        #     # We can reuse the same DataModule as LogRobust
+        #     data_module = LogRobustDataModule(vectorized_file=dataset_file, batch_size=batch_size)
+        #     data_module.setup()
 
-            lightning_model = NeuralLogLightning(
-                input_dim=data_module.input_dim,
-                hidden_dim=hidden_size, # Reusing --hidden-size
-                num_layers=num_layers,
-                num_attention_heads=num_attention_heads,
-                learning_rate=learning_rate
-            )
+        #     lightning_model = NeuralLogLightning(
+        #         input_dim=data_module.input_dim,
+        #         hidden_dim=hidden_size, # Reusing --hidden-size
+        #         num_layers=num_layers,
+        #         num_attention_heads=num_attention_heads,
+        #         learning_rate=learning_rate
+        #     )
             
         else:
             raise click.UsageError("Invalid model specified.")
             
         # --- COMMON TRAINER LOGIC ---
-        checkpoint_callback = ModelCheckpoint(monitor='val_loss', mode='min', dirpath=output_dir, filename=f'{model}-best-checkpoint')
-        early_stopping_callback = EarlyStopping(monitor='val_loss', patience=5, mode='min')
+        # checkpoint_callback = ModelCheckpoint(monitor='val_loss', mode='min', dirpath=output_dir, filename=f'{model}-best-checkpoint')
+        # early_stopping_callback = EarlyStopping(monitor='val_loss', patience=5, mode='min')
 
-        trainer = pl.Trainer(
-            max_epochs=epochs, callbacks=[checkpoint_callback, early_stopping_callback],
-            logger=wandb_logger, default_root_dir=output_dir, accelerator="auto"
-        )
+        # trainer = pl.Trainer(
+        #     max_epochs=epochs, callbacks=[checkpoint_callback, early_stopping_callback],
+        #     logger=wandb_logger, default_root_dir=output_dir, accelerator="auto"
+        # )
         
-        click.echo("\n--- Starting Training & Validation ---")
-        trainer.fit(lightning_model, datamodule=data_module)
+        # click.echo("\n--- Starting Training & Validation ---")
+        # trainer.fit(lightning_model, datamodule=data_module)
 
         # click.echo("\n--- Starting Testing ---")
         # trainer.test(datamodule=data_module, ckpt_path='best')

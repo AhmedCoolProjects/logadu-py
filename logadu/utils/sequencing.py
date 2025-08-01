@@ -28,7 +28,7 @@ def create_seq_vectors_for_file(file_path, window_size=10, step_size=1, output_f
     print(f"Loading data from {_name}...")
     
     try:
-        df = pd.read_csv(file_path)
+        df = pd.read_csv(file_path, low_memory=False)
     except FileNotFoundError:
         print(f"Error: The file '{file_path}' was not found.")
         return
@@ -37,7 +37,7 @@ def create_seq_vectors_for_file(file_path, window_size=10, step_size=1, output_f
     
     # --- CONDITIONAL LOGIC BASED ON OUTPUT FORMAT ---
     if output_format == 'index':
-        click.echo("Generating sequences of integer indexes from 'EventId' column.")
+        click.echo("Generating sequences of INTEGER INDEXES from 'EventId' column.")
         # Extract the sequence of EventIds
         log_key_sequence = df['EventId'].tolist()
         
@@ -49,20 +49,21 @@ def create_seq_vectors_for_file(file_path, window_size=10, step_size=1, output_f
         source_sequence = [event_id_to_index[event_id] for event_id in log_key_sequence]
         
         # Save the mapping to a pickle file
-        mapping_file = file_path.replace('_merged.csv', f'_{window_size}_{step_size}_mapping.pkl')
+        mapping_file = file_path.replace('_merged.csv', f'_{window_size}_{step_size}_index_mapping.pkl')
         with open(mapping_file, 'wb') as f:
             pickle.dump(event_id_to_index, f)
         print(f"Saved EventId to index mapping to {mapping_file}")
 
     elif output_format == 'template':
-        click.echo("Generating sequences of text templates from 'EventTemplate' column.")
+        click.echo("Generating sequences of text TEMPLATES from 'EventTemplate' column.")
         if 'EventTemplate' not in df.columns:
             click.secho("Error: 'EventTemplate' column not found in the input file.", fg="red")
             return
         # Use the EventTemplate strings directly as the source sequence
         source_sequence = df['EventTemplate'].tolist()
+        
     elif output_format == 'raw':
-        click.echo("Generating sequences of raw log messages from 'content' column.")
+        click.echo("Generating sequences of RAW LOG MESSAGES from 'content' column.")
         if 'content' not in df.columns:
             click.secho("Error: 'content' column not found. Please ensure your parsed CSV has a 'content' column for raw messages.", fg="red")
             return
@@ -90,12 +91,7 @@ def create_seq_vectors_for_file(file_path, window_size=10, step_size=1, output_f
     # --- Save to CSV ---
     print("\n--- Saving to CSV file ---")
 
-    # The 'sequences' column can hold either lists of ints or lists of strings
-    # For LogRobust, we use the EventSequence and Label column names
-    if output_format in ['template', 'raw']:
-        output_df = pd.DataFrame({'EventSequence': X, 'Label': L})
-    else:
-        output_df = pd.DataFrame({'sequences': X, 'next': y, 'label': L})
+    output_df = pd.DataFrame({'sequence': X, 'next': y, 'label': L})
 
     # Define a clearer output file name based on the format
     output_suffix = f'_{window_size}_{step_size}_seq_{output_format}.csv'
@@ -103,3 +99,4 @@ def create_seq_vectors_for_file(file_path, window_size=10, step_size=1, output_f
 
     output_df.to_csv(output_filename, index=False)
     print(f"Successfully saved {len(output_df)} rows to {output_filename}")
+    
