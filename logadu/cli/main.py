@@ -6,6 +6,8 @@ from logadu.commands.train import train
 from logadu.commands.represent import represent
 from logadu.commands.predict import predict
 from logadu.commands.evaluate import evaluate
+from logadu.commands.convert import convert
+from logadu.commands.vectorize import vectorize
 
 @click.group()
 def cli():
@@ -22,7 +24,9 @@ cli.add_command(seq)
 # cli.add_command(quant)
 ## Semantic vectors
 # cli.add_command(semantic)
-cli.add_command(represent) # ADD THIS
+cli.add_command(represent)
+cli.add_command(vectorize)
+cli.add_command(convert)
 # Training
 cli.add_command(train)
 # Prediction

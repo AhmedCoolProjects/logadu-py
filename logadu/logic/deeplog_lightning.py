@@ -1,72 +1,57 @@
-# /logadu/logic/deeplog_lightning.py
-
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-import pytorch_lightning as pl
 from torchmetrics import Accuracy
 
-# Import your existing model definition
-from logadu.models.deeplog import DeepLog
+from logadu.models.deeplog import DeepLog 
 
 class DeepLogLightning(pl.LightningModule):
-    """
-    PyTorch Lightning module for the DeepLog model.
-    """
-    def __init__(self, input_size, hidden_size, num_layers, num_keys, learning_rate=0.001):
+    def __init__(self, vocab_size, hidden_size, num_layers, embedding_dim, learning_rate=0.001):
         super().__init__()
         self.save_hyperparameters()
 
         self.model = DeepLog(
-            input_size=input_size,
-            hidden_size=hidden_size,
+            vocab_size=vocab_size, 
+            hidden_size=hidden_size, 
             num_layers=num_layers,
-            num_keys=num_keys
+            embedding_dim=embedding_dim
         )
-
+        
         self.criterion = nn.CrossEntropyLoss()
+        
+        self.val_accuracy = Accuracy(task="multiclass", num_classes=self.hparams.vocab_size, top_k=9)
 
-        # --- FIX IS HERE ---
-        # You must specify the task type and the number of classes for the metric.
-        # self.hparams.num_keys is available because of self.save_hyperparameters()
-        self.train_accuracy = Accuracy(task="multiclass", num_classes=self.hparams.num_keys, top_k=9)
-        self.val_accuracy = Accuracy(task="multiclass", num_classes=self.hparams.num_keys, top_k=9)
-        self.test_accuracy = Accuracy(task="multiclass", num_classes=self.hparams.num_keys, top_k=9)
 
-    def forward(self, x):
-        return self.model(x)
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
+
+    def forward(self, sequences):
+        """ Defines the forward pass for inference. """
+        # PyTorch Lightning automatically moves the input `sequences` tensor to the correct device.
+        batch = {'sequential': sequences}
+        # We no longer pass the device argument.
+        return self.model(batch).probabilities
 
     def training_step(self, batch, batch_idx):
-        sequences, labels = batch
-        sequences = sequences.view(sequences.size(0), -1, 1)
+        sequences, next_events = batch
+        batch_dict = {'sequential': sequences}
         
-        logits = self(sequences)
-        loss = self.criterion(logits, labels)
+        # The model is already on the correct device, as are the input tensors.
+        logits = self.model(batch_dict).logits
         
-        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        self.log('train_acc_top9', self.train_accuracy(logits, labels), on_step=False, on_epoch=True)
+        # The target tensor `next_events` is also automatically moved to the device.
+        loss = self.criterion(logits, next_events)
         
+        self.log('train_loss', loss, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        sequences, labels = batch
-        sequences = sequences.view(sequences.size(0), -1, 1)
-
-        logits = self(sequences)
-        loss = self.criterion(logits, labels)
+        sequences, next_events = batch
+        batch_dict = {'sequential': sequences}
+        
+        output = self.model(batch_dict)
+        
+        loss = self.criterion(output.logits, next_events)
         
         self.log('val_loss', loss, prog_bar=True)
-        self.log('val_acc_top9', self.val_accuracy(logits, labels))
-
-    def test_step(self, batch, batch_idx):
-        sequences, labels = batch
-        sequences = sequences.view(sequences.size(0), -1, 1)
-        
-        logits = self(sequences)
-        loss = self.criterion(logits, labels)
-        
-        self.log('test_loss', loss)
-        self.log('test_acc_top9', self.test_accuracy(logits, labels))
-
-    def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
-        return optimizer
+        self.log('val_acc_top9', self.val_accuracy(output.logits, next_events))

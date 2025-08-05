@@ -1,5 +1,3 @@
-# /logadu/logic/logbert_datamodule.py
-
 import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -51,7 +49,7 @@ class LogBERTDataModule(pl.LightningDataModule):
 
     def _build_vocab(self, df):
         # Build vocabulary from all unique log keys in the dataset
-        all_keys = set(str(key) for seq in df['sequences'] for key in seq)
+        all_keys = set(str(key) for seq in df['sequence'] for key in seq)
         # Define special tokens required by the model
         vocab = {"<pad>": 0, "[DIST]": 1, "[MASK]": 2}
         for key in sorted(list(all_keys)):
@@ -61,20 +59,20 @@ class LogBERTDataModule(pl.LightningDataModule):
 
     def setup(self, stage=None):
         df = pd.read_csv(self.dataset_file)
-        df['sequences'] = df['sequences'].apply(ast.literal_eval)
+        df['sequence'] = df['sequence'].apply(ast.literal_eval)
 
         self.vocab = self._build_vocab(df)
         
         # CRITICAL: Train and validate ONLY on normal data (semi-supervised)
         normal_df = df[df['label'] == 0]
         
-        train_seq, val_seq = train_test_split(normal_df['sequences'].tolist(), test_size=0.1, random_state=42)
+        train_seq, val_seq = train_test_split(normal_df['sequence'].tolist(), test_size=0.1, random_state=42)
         
         self.train_dataset = LogBERTDataset(train_seq, self.vocab, self.max_seq_len)
         self.val_dataset = LogBERTDataset(val_seq, self.vocab, self.max_seq_len)
 
     def _collate_fn(self, batch):
-        """ Custom function to pad sequences in a batch to the same length. """
+        """ Custom function to pad sequence in a batch to the same length. """
         inputs, labels = zip(*batch)
         padded_inputs = pad_sequence(inputs, batch_first=True, padding_value=self.vocab["<pad>"])
         padded_labels = pad_sequence(labels, batch_first=True, padding_value=-100)

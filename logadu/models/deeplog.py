@@ -1,12 +1,7 @@
-import torch
 import torch.nn as nn
-import click
-from typing import Optional
-
-
+import torch
 
 class ModelOutput:
-    # ... (same as before)
     def __init__(self, logits, probabilities, loss=None, embeddings=None):
         self.logits = logits
         self.probabilities = probabilities
@@ -14,56 +9,30 @@ class ModelOutput:
         self.embeddings = embeddings
 
 class DeepLog(nn.Module):
-    # ... (same as before, with one small correction in the embedding layer)
-    def __init__(self,
-                 hidden_size: int = 100,
-                 num_layers: int = 2,
-                 vocab_size: int = 100,
-                 embedding_dim: int = 100,
-                 dropout: float = 0.5,
-                 criterion: Optional[nn.Module] = None):
+    def __init__(self, vocab_size, embedding_dim=128, hidden_size=128, num_layers=2, dropout=0.5):
         super(DeepLog, self).__init__()
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
-        self.embedding_dim = embedding_dim
-        self.vocab_size = vocab_size
-        # The vocab_size passed should be the number of unique keys.
-        # Embedding layer needs to handle indexes from 0 to vocab_size-1.
-        self.embedding = nn.Embedding(self.vocab_size, self.embedding_dim)
-        self.lstm = nn.LSTM(input_size=self.embedding_dim,
-                            hidden_size=self.hidden_size,
-                            num_layers=self.num_layers,
-                            batch_first=True,
-                            bidirectional=False,
-                            dropout=dropout)
+        self.embedding = nn.Embedding(vocab_size, embedding_dim)
+        self.lstm = nn.LSTM(
+            input_size=embedding_dim,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            batch_first=True,
+            dropout=dropout
+        )
         self.fc = nn.Linear(hidden_size, vocab_size)
-        self.criterion = criterion
 
-    def forward(self, batch, device='cpu'):
-        x = batch['sequential'].to(device)
-        try:
-            # The 'next' event is the label for the model's training loss
-            y = batch['label'].to(device) 
-        except KeyError:
-            y = None
+    def forward(self, batch):
+        # No 'device' argument needed here.
+        # The tensors in 'batch' will already be on the correct device.
+        x = batch['sequential']
         
+        # The calculation of logits and probabilities remains the same
         x_embedded = self.embedding(x)
         out, _ = self.lstm(x_embedded)
         
         logits = self.fc(out[:, -1, :])
         probabilities = torch.softmax(logits, dim=-1)
         
-        loss = None
-        if y is not None and self.criterion is not None:
-            loss = self.criterion(logits, y.view(-1))
-
-        return ModelOutput(logits=logits, probabilities=probabilities, loss=loss, embeddings=out[:, -1, :])
-
-    def save(self, path):
-        torch.save(self.state_dict(), path)
-
-    def load(self, path):
-        self.load_state_dict(torch.load(path))
-
-
-
+        # We remove the loss calculation from the base model's forward pass.
+        # This is the sole responsibility of the LightningModule.
+        return ModelOutput(logits=logits, probabilities=probabilities, embeddings=out[:, -1, :])

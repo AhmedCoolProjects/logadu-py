@@ -82,4 +82,68 @@ logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ah
 --wandb-project "lad_in_apts" \
 --wandb-run-name "neurallog_Linux_run1"
 
-logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Fox/drain/Fox_10_1_seq_index.csv --model deeplog --epochs 100 --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "deeplog_fox_index_10"
+## DEEPLOG - TRAIN
+
+### FOX
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Fox/drain/Fox_10_1_seq_index.csv --model deeplog --epochs 100 --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "deeplog_fox_index_10" --dataset-name fox_10
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Fox/drain/Fox_20_1_seq_index.csv --model deeplog --epochs 100 --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "deeplog_fox_index_20" --dataset-name fox_20
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Fox/drain/Fox_50_1_seq_index.csv --model deeplog --epochs 100 --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "deeplog_fox_index_50" --dataset-name fox_50
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Fox/drain/Fox_100_1_seq_index.csv --model deeplog --epochs 100 --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "deeplog_fox_index_100" --dataset-name fox_100
+
+### LINUX24APT
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Linux24APT/drain/Linux24APT_10_1_seq_index.csv --model deeplog --epochs 100 --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "deeplog_linux24_index_10" --dataset-name linux24_10
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Linux24APT/drain/Linux24APT_20_1_seq_index.csv --model deeplog --epochs 100 --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "deeplog_linux24_index_20" --dataset-name linux24_20
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Linux24APT/drain/Linux24APT_50_1_seq_index.csv --model deeplog --epochs 100 --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "deeplog_linux24_index_50" --dataset-name linux24_50
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Linux24APT/drain/Linux24APT_100_1_seq_index.csv --model deeplog --epochs 100 --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "deeplog_linux24_index_100" --dataset-name linux24_100
+
+### RUSSELLMITCHELL
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Russellmitchell/drain/Russellmitchell_10_1_seq_index.csv --model deeplog --epochs 100 --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "deeplog_russellmitchell_index_10" --dataset-name russellmitchell_10
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Russellmitchell/drain/Russellmitchell_20_1_seq_index.csv --model deeplog --epochs 100 --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "deeplog_russellmitchell_index_20" --dataset-name russellmitchell_20
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Russellmitchell/drain/Russellmitchell_50_1_seq_index.csv --model deeplog --epochs 100 --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "deeplog_russellmitchell_index_50" --dataset-name russellmitchell_50
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Russellmitchell/drain/Russellmitchell_100_1_seq_index.csv --model deeplog --epochs 100 --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "deeplog_russellmitchell_index_100" --dataset-name russellmitchell_100
+
+### Win25Ch
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Win25ChAPT/drain/Win25ChAPT_10_1_seq_index.csv --model deeplog --epochs 100 --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "deeplog_win25ch_index_10" --dataset-name win25ch_10
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Win25ChAPT/drain/Win25ChAPT_20_1_seq_index.csv --model deeplog --epochs 100 --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "deeplog_win25ch_index_20" --dataset-name win25ch_20
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Win25ChAPT/drain/Win25ChAPT_50_1_seq_index.csv --model deeplog --epochs 100 --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "deeplog_win25ch_index_50" --dataset-name win25ch_50
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Win25ChAPT/drain/Win25ChAPT_100_1_seq_index.csv --model deeplog --epochs 100 --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "deeplog_win25ch_index_100" --dataset-name win25ch_100
+
+## DEEPLOG - PREDICT
+
+- logadu predict /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Fox/drain/Fox_10_1_seq_index.csv --model-type deeplog --model-checkpoint /home/ahmed.bargady/lustre/nlp_team-um6p-st-sccs-id7fz1zvotk/IDS/ahmed.bargady/data/github/logs-ad-ultimate/logadu-package/trained_models/deeplog-fox_10-best-checkpoint.ckpt --top-k 9
+
+logadu predict /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Russellmitchell/drain/Russellmitchell_10_1_seq_index.csv --model-type deeplog --model-checkpoint /home/ahmed.bargady/lustre/nlp_team-um6p-st-sccs-id7fz1zvotk/IDS/ahmed.bargady/data/github/logs-ad-ultimate/logadu-package/trained_models/deeplog-fox_10-best-checkpoint.ckpt --top-k 9
+
+logadu predict /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Linux24APT/drain/Linux24APT_10_1_seq_index.csv --model-type deeplog --model-checkpoint /home/ahmed.bargady/lustre/nlp_team-um6p-st-sccs-id7fz1zvotk/IDS/ahmed.bargady/data/github/logs-ad-ultimate/logadu-package/trained_models/deeplog-linux24_10-best-checkpoint.ckpt --top-k 9
+
+## LOGBERT - TRAIN
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Fox/drain/Fox_10_1_seq_index.csv --model logbert --epochs 100 --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "logbert_fox_index_10" --dataset-name fox_10
+
+logadu train /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Linux24APT/drain/Linux24APT_10_1_seq_index.csv --model logbert --epochs 100 --output-dir ./trained_models --wandb-project "lad_in_apts" --wandb-run-name "logbert_linux24_index_10" --dataset-name linux24_10
+
+## LOGBERT - PREDICT
+
+logadu predict /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Fox/drain/Fox_10_1_seq_index.csv --model-type logbert --model-checkpoint /home/ahmed.bargady/lustre/nlp_team-um6p-st-sccs-id7fz1zvotk/IDS/ahmed.bargady/data/github/logs-ad-ultimate/logadu-package/trained_models/logbert/logbert-fox_10-best-checkpoint.ckpt --top-k 9 --anomaly-threshold 2
+
+logadu predict /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Russellmitchell/drain/Russellmitchell_10_1_seq_index.csv --model-type logbert --model-checkpoint /home/ahmed.bargady/lustre/nlp_team-um6p-st-sccs-id7fz1zvotk/IDS/ahmed.bargady/data/github/logs-ad-ultimate/logadu-package/trained_models/logbert-fox_10-best-checkpoint.ckpt --top-k 9 --anomaly-threshold 2
+
+logadu predict /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation/Linux24APT/drain/Linux24APT_10_1_seq_index.csv --model-type logbert --model-checkpoint /home/ahmed.bargady/lustre/nlp_team-um6p-st-sccs-id7fz1zvotk/IDS/ahmed.bargady/data/github/logs-ad-ultimate/logadu-package/trained_models/logbert-linux24_10-best-checkpoint.ckpt --top-k 9 --anomaly-threshold 2
+
+LOGBERT - RESULTS
