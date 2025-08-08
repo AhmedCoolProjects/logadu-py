@@ -3,17 +3,21 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.loggers import WandbLogger
 import wandb
-from sklearn.metrics import classification_report
+# from sklearn.metrics import classification_report
 import torch
 from pathlib import Path
 # ---------------- DEEPLOG ----------------
 from logadu.datamodules.deeplog import DeepLogDataModule
 from logadu.modellightning.deeplog import DeepLogLightning
 
+# ---------------- LOGBERT ----------------
+from logadu.modellightning.logbert import LogBERTLightning
+from logadu.datamodules.index import IndexDataModule
+
 torch.set_float32_matmul_precision('high')  # Enable Tensor Cores for faster training
 
 @click.command()
-@click.argument("model", type=click.Choice(['deeplog']))
+@click.argument("model", type=click.Choice(['deeplog', 'logbert']))
 @click.argument("dataset_name", type=str)
 @click.argument("window_size", type=int)
 @click.option("--split-method", default=1, type=int, help="Which split type to use, 1: train/valid/test on squences, 2: train/valid/test log file, then sequencing with step size=1 for train, and step size=window size for valid and test.")
@@ -23,16 +27,8 @@ torch.set_float32_matmul_precision('high')  # Enable Tensor Cores for faster tra
 @click.option("--use-wandb", is_flag=True, help="Use Weights & Biases for logging.")
 @click.option("--wandb-project", default="first_lad_in_apts", help="W&B project name to log runs to.")
 def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, use_wandb, wandb_project):
-    seq_type = None
-    if model.lower() == "deeplog":
-        seq_type = "index"
-    else:
-        raise ValueError(f"Unsupported model type: {model}")
 
-    if split_method == 1:
-        data_file = f"{path}/{dataset_name}/drain/{dataset_name}_{window_size}_1_seq_{seq_type}.csv"
-    elif split_method == 2 or split_method == 3 or split_method == 4:
-        data_file = f"{path}/{dataset_name}/drain/{dataset_name}_merged.csv"
+    data_file = f"{path}/{dataset_name}/drain/{dataset_name}_merged.csv"
     
     output_dir = f"{path}/{dataset_name}/models/{split_method}/{model.lower()}"
     Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -42,47 +38,47 @@ def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, 
     
         wandb_logger = WandbLogger(project=wandb_project, name=wandb_run_name, log_model="all")
     
-    if split_method == 4:
-        all_fold_preds, all_fold_labels = [], []
-        for i in range(n_splits):
-            click.secho(f"\n--- Starting Fold {i+1}/{n_splits} ---", fg="cyan", bold=True)
-            data_module = DeepLogDataModule(
-                dataset_file=data_file, split_method=4, window_size=window_size, n_splits=n_splits, fold_index=i)
-            data_module.setup()
+    # if split_method == 4:
+    #     all_fold_preds, all_fold_labels = [], []
+    #     for i in range(n_splits):
+    #         click.secho(f"\n--- Starting Fold {i+1}/{n_splits} ---", fg="cyan", bold=True)
+    #         data_module = DeepLogDataModule(
+    #             dataset_file=data_file, split_method=4, window_size=window_size, n_splits=n_splits, fold_index=i)
+    #         data_module.setup()
             
-            # R-initializing the model for each fold to ensure no leakage
-            lightning_model = DeepLogLightning(
-                vocab_size=data_module.vocab_size,
-                hidden_size=128,
-                num_layers=2,
-                embedding_dim=128,
-            )
+    #         # R-initializing the model for each fold to ensure no leakage
+    #         lightning_model = DeepLogLightning(
+    #             vocab_size=data_module.vocab_size,
+    #             hidden_size=128,
+    #             num_layers=2,
+    #             embedding_dim=128,
+    #         )
             
-            trainer = pl.Trainer(
-                max_epochs=epochs,
-                accelerator="auto",
-                callbacks=[EarlyStopping(monitor='val_loss', patience=5, mode='min')],
-                enable_checkpointing=False
-            )
+    #         trainer = pl.Trainer(
+    #             max_epochs=epochs,
+    #             accelerator="auto",
+    #             callbacks=[EarlyStopping(monitor='val_loss', patience=5, mode='min')],
+    #             enable_checkpointing=False
+    #         )
             
-            trainer.fit(lightning_model, datamodule=data_module, verbose=False)
+    #         trainer.fit(lightning_model, datamodule=data_module, verbose=False)
             
-            all_fold_preds.extend(lightning_model.test_step_predictions)
-            all_fold_labels.extend(lightning_model.test_step_labels)
+    #         all_fold_preds.extend(lightning_model.test_step_predictions)
+    #         all_fold_labels.extend(lightning_model.test_step_labels)
             
-        # --- Aggregate results across folds ---
-        click.secho("\n--- Aggregating Results Across Folds ---", fg="magenta", bold=True)
-        final_preds = torch.cat(all_fold_preds).cpu().numpy()
-        final_labels = torch.cat(all_fold_labels).cpu().numpy()
+    #     # --- Aggregate results across folds ---
+    #     click.secho("\n--- Aggregating Results Across Folds ---", fg="magenta", bold=True)
+    #     final_preds = torch.cat(all_fold_preds).cpu().numpy()
+    #     final_labels = torch.cat(all_fold_labels).cpu().numpy()
         
-        click.echo("\n" + "="*60)
-        click.secho(f"  Final Aggregated Time Series CV Report ({n_splits} Folds)", bold=True)
-        click.echo("="*60)
-        report = classification_report(final_labels, final_preds, target_names=['Normal', 'Anomalous'], digits=4)
-        click.echo(report)
-        click.echo("="*60)
+    #     click.echo("\n" + "="*60)
+    #     click.secho(f"  Final Aggregated Time Series CV Report ({n_splits} Folds)", bold=True)
+    #     click.echo("="*60)
+    #     report = classification_report(final_labels, final_preds, target_names=['Normal', 'Anomalous'], digits=4)
+    #     click.echo(report)
+    #     click.echo("="*60)
     
-    else:
+    if True:
     
         try:
             if model.lower() == "deeplog":
@@ -95,6 +91,15 @@ def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, 
                     num_layers=2,   
                     embedding_dim=128,
                 )
+            elif model.lower() == "logbert":
+                data_module = IndexDataModule(dataset_file=data_file, split_method=split_method, window_size=window_size)
+                data_module.setup()
+                
+                lightning_model = LogBERTLightning(
+                    vocab_size=data_module.vocab_size
+                )
+                
+              
             if data_module and lightning_model:
                 checkpoint_callback = ModelCheckpoint(
                     monitor='val_loss',

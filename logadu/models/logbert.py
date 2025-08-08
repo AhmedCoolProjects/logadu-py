@@ -1,63 +1,64 @@
-import torch
 import torch.nn as nn
-import math
+import torch
+from transformers import BertModel, BertConfig
+from logadu.utils.output import ModelOutput
+
 
 class LogBERT(nn.Module):
     """
-    LogBERT model, adapted for the self-supervised framework from Guo et al.
-    Uses a standard Transformer Encoder architecture.
+    LogBERT model implemented using the standard Hugging Face Transformers library.
+    This approach is more robust, maintainable, and allows leveraging pre-trained models.
     """
-    def __init__(self, vocab_size, embedding_dim=128, hidden_size=256, num_layers=4, num_attention_heads=4, max_seq_len=512):
+    def __init__(self, model_name='bert-base-uncased', vocab_size=None):
         super(LogBERT, self).__init__()
-
-        # 1. Embedding Layer: Converts log key indexes into dense vectors
-        self.embedding = nn.Embedding(vocab_size, embedding_dim, padding_idx=0)
         
-        # 2. Positional Encoding: Injects information about the order of logs in the sequence
-        self.positional_encoding = nn.Parameter(torch.zeros(1, max_seq_len, embedding_dim))
-
-        # 3. Transformer Encoder: The core of the model
-        encoder_layer = nn.TransformerEncoderLayer(
-            d_model=embedding_dim,
-            nhead=num_attention_heads,
-            dim_feedforward=hidden_size,
-            batch_first=True,
-            dropout=0.1
-        )
-        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
-
-        # 4. MLM Head: A linear layer to predict masked log keys from the Transformer's output
-        self.mlm_head = nn.Linear(embedding_dim, vocab_size)
+        # If a vocab_size is provided, we initialize a BERT model from scratch.
+        # This is useful for a pure index-based approach without pre-training.
+        if vocab_size:
+            self.bert_config = BertConfig(
+                vocab_size=vocab_size,
+                hidden_size=128,          # Smaller embedding size for efficiency
+                num_hidden_layers=2,      # A shallow model is often enough
+                num_attention_heads=2,    # Fewer heads
+                is_decoder=False
+            )
+            self.bert = BertModel(config=self.bert_config)
+        else:
+            # If no vocab_size, load a powerful pre-trained BERT model.
+            # This is the standard approach for semantic tasks.
+            self.bert = BertModel.from_pretrained(model_name)
+        
+        # Get the hidden dimension from the BERT model's config
+        hidden_dim = self.bert.config.hidden_size
+        
+        # Head for the Masked Log Key Prediction (MLM) task
+        # It must predict a score for each word in the vocabulary.
+        self.mlm_head = nn.Linear(hidden_dim, vocab_size if vocab_size else self.bert.config.vocab_size)
 
     def forward(self, x):
         """
-        The forward pass of the model.
-        
-        Args:
-            x (Tensor): Input tensor of log key indexes, shape (batch_size, sequence_length)
-        
-        Returns:
-            dict: A dictionary containing the logits for the MLM task and the sequence
-                  representation for the VHM task.
+        The forward pass of the model, now returning a standardized ModelOutput object.
         """
-        # Get embeddings and add positional encoding
-        embeddings = self.embedding(x)
-        embeddings += self.positional_encoding[:, :x.size(1), :]
+        attention_mask = (x > 0).long()
+        outputs = self.bert(input_ids=x, attention_mask=attention_mask)
+        sequence_output = outputs.last_hidden_state
+        
+        # --- Prepare outputs for the ModelOutput class ---
+        
+        # 1. Logits for Masked Log Key Prediction (MLKP)
+        mlm_logits = self.mlm_head(sequence_output)
+        
+        # 2. Probabilities for MLKP (useful for prediction/inference)
+        mlm_probabilities = torch.softmax(mlm_logits, dim=-1)
+        
+        # 3. Embeddings for Volume of Hypersphere Minimization (VHM)
+        # This is the representation of the entire sequence from the [DIST] token
+        dist_output = sequence_output[:, 0, :]
 
-        # Pass through the main Transformer Encoder
-        transformer_output = self.transformer_encoder(embeddings)
-        # output shape: (batch_size, sequence_length, embedding_dim)
-
-        # --- Prepare outputs for the two self-supervised tasks ---
-        
-        # Output for Masked Log Key Prediction (MLKP)
-        mlm_logits = self.mlm_head(transformer_output)
-        
-        # Output for Volume of Hypersphere Minimization (VHM)
-        # We use the output of the first token ([DIST]) as a representation of the entire sequence.
-        dist_output = transformer_output[:, 0, :]
-        
-        return {
-            "mlm_logits": mlm_logits,
-            "dist_output": dist_output
-        }
+        # The loss is calculated in the LightningModule, so we return None here.
+        return ModelOutput(
+            logits=mlm_logits,
+            probabilities=mlm_probabilities,
+            loss=None,
+            embeddings=dist_output
+        )
