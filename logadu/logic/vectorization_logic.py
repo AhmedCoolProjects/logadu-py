@@ -3,7 +3,6 @@ import pandas as pd
 import torch
 import numpy as np
 from gensim.models import KeyedVectors
-import ast
 
 def _load_word_embeddings(file_path):
     """
@@ -44,19 +43,19 @@ def _vectorize_template(template_text, word_vectors):
     # 4. Aggregate the word vectors by taking their mean to get a single template vector
     return np.mean(vectors, axis=0)
 
-def vectorize_templates_from_file(template_file, word_embeddings_file, output_file, vectorizer='fasttext'):
+def vectorize_templates_from_file(vectorizer_path, output_file, temp_path):
     """
     Loads a CSV of unique templates, vectorizes them, and saves a lookup map.
     """
-    df = pd.read_csv(template_file)
+    df = pd.read_csv(temp_path)
     
     if 'EventId' not in df.columns or 'EventTemplate' not in df.columns:
         raise click.UsageError("Input CSV must contain 'EventId' and 'EventTemplate' columns.")
         
-    word_vectors = _load_word_embeddings(word_embeddings_file)
+    word_vectors = _load_word_embeddings(vectorizer_path)
 
     template_vector_map = {}
-    
+
     with click.progressbar(df.itertuples(), length=len(df), label="Vectorizing templates") as bar:
         for row in bar:
             event_id = row.EventId

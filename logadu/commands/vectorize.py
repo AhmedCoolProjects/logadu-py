@@ -4,16 +4,21 @@ from logadu.logic.vectorization_logic import vectorize_templates_from_file
 
 
 @click.command()
-@click.argument("template_file", type=click.Path(exists=True))
-@click.argument("word_embeddings_file", type=click.Path(exists=True))
-@click.option("--output-dir", default="fasttext", help="The folder name we save the vectorized templates to.")
-@click.option("--vectorizer", default="fasttext", type=click.Choice(['fasttext', 'bert']), help="Type of vectorizer to use.")
-def vectorize(template_file, word_embeddings_file, output_dir, vectorizer):
+@click.argument("vectorizer", type=click.Choice(['fasttext', 'bert']))
+@click.argument("vectorizer_path", type=click.Path(exists=True))
+@click.option("--dataset", type=str, help="Dataset name to vectorize.")
+@click.option("--gpath", type=click.Path(exists=True))
+def vectorize(vectorizer, vectorizer_path, dataset, gpath):
     """
-    Vectorize log templates using the specified word embeddings.
+    Vectorize log templates using the specified word embeddings (e.g., FastText, BERT).
     """
-    output_path = Path(template_file).parent / output_dir
-    output_path.mkdir(parents=True, exist_ok=True)
-    output_file = output_path / f"{Path(template_file).stem}_vectors.pt"
+    # temp_path = gpath + dataset + drain + dataset + "_templates.csv"
+    temp_path = Path(gpath) / dataset / "drain" / f"{dataset}_templates.csv"
+    if not temp_path.exists():
+        click.secho(f"Error: The file {temp_path} does not exist.", fg="red")
+        return
+    output_dir = Path(temp_path).parent / vectorizer
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_file = output_dir / f"{Path(temp_path).stem}_vectors.pt"
 
-    vectorize_templates_from_file(template_file, word_embeddings_file, output_file, vectorizer)
+    vectorize_templates_from_file(vectorizer_path, output_file, temp_path)

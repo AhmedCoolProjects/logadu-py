@@ -2,31 +2,47 @@ import click
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.loggers import WandbLogger
+import os
 import wandb
 # from sklearn.metrics import classification_report
 import torch
 from pathlib import Path
 # ---------------- DEEPLOG ----------------
-from logadu.datamodules.deeplog import DeepLogDataModule
+from logadu.datamodules.index import IndexDataModule
 from logadu.modellightning.deeplog import DeepLogLightning
 
 # ---------------- LOGBERT ----------------
-from logadu.modellightning.logbert import LogBERTLightning
-from logadu.datamodules.index import IndexDataModule
+# from logadu.modellightning.logbert import LogBERTLightning
+
+# ---------------- ML ----------------
+from logadu.modellightning.agg_vector_template import MLLightningModule
+from logadu.datamodules.agg_vector_template import MLDataModuleFromMerged
+
+# ---------------- LogRobust ----------------
+from logadu.modellightning.logrobust import LogRobustLightning
+from logadu.datamodules.vector_template import NoAggDataModule
+
+# ----------------- LogCNN ----------------
+from logadu.modellightning.logcnn import LogCNNLightning
+
 
 torch.set_float32_matmul_precision('high')  # Enable Tensor Cores for faster training
 
+# logadu run pca Fox 5 --path .../implementation --vector-map-file .../vector.pt 
+# logadu run knn Fox 5 --path .../implementation --vector-map-file .../vector.pt --k-neighbors 5
+
 @click.command()
-@click.argument("model", type=click.Choice(['deeplog', 'logbert']))
+@click.argument("model", type=click.Choice(['deeplog', 'logbert', 'logrobust', 'logcnn', 'pca', 'knn', 'rf']))
 @click.argument("dataset_name", type=str)
 @click.argument("window_size", type=int)
 @click.option("--split-method", default=1, type=int, help="Which split type to use, 1: train/valid/test on squences, 2: train/valid/test log file, then sequencing with step size=1 for train, and step size=window size for valid and test.")
 @click.option("--n-splits", default=5, help="[Method 4] Number of folds for Time Series Cross-Validation.")
 @click.option("--path", type=click.Path(exists=True), help="Path to the dataset file.")
 @click.option("--epochs", default=50, help="Number of epochs for training.")
+@click.option("--k-neighbors", default=5, help="[KNN] Number of neighbors.")
 @click.option("--use-wandb", is_flag=True, help="Use Weights & Biases for logging.")
 @click.option("--wandb-project", default="first_lad_in_apts", help="W&B project name to log runs to.")
-def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, use_wandb, wandb_project):
+def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, k_neighbors, use_wandb, wandb_project):
 
     data_file = f"{path}/{dataset_name}/drain/{dataset_name}_merged.csv"
     
@@ -34,7 +50,7 @@ def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, 
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     
     if use_wandb:
-        wandb_run_name = f"{model.lower()}-{dataset_name}-{window_size}-{seq_type}"
+        wandb_run_name = f"{model.lower()}-{dataset_name}-{window_size}"
     
         wandb_logger = WandbLogger(project=wandb_project, name=wandb_run_name, log_model="all")
     
@@ -82,7 +98,7 @@ def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, 
     
         try:
             if model.lower() == "deeplog":
-                data_module = DeepLogDataModule(dataset_file=data_file, split_method=split_method, window_size=window_size)
+                data_module = IndexDataModule(dataset_file=data_file, split_method=split_method, window_size=window_size)
                 data_module.setup()
                 
                 lightning_model = DeepLogLightning(
@@ -91,16 +107,72 @@ def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, 
                     num_layers=2,   
                     embedding_dim=128,
                 )
-            elif model.lower() == "logbert":
-                data_module = IndexDataModule(dataset_file=data_file, split_method=split_method, window_size=window_size)
+            elif model.lower() == "logrobust":
+                data_module = NoAggDataModule(
+                    merged_file=data_file,
+                    vector_map_file=f"{path}/{dataset_name}/drain/fasttext/{dataset_name}_templates_vectors.pt",
+                    window_size=window_size,
+                    batch_size=256,
+                    num_workers=84,
+                    aggregate=False  # No aggregation for LogRobust
+                )
                 data_module.setup()
                 
-                lightning_model = LogBERTLightning(
-                    vocab_size=data_module.vocab_size
+                lightning_model = LogRobustLightning(
+                    input_dim=data_module.input_dim,
+                    hidden_size=128,
+                    num_layers=2
                 )
+            elif model.lower() == "logcnn":
+                data_module = IndexDataModule(
+                    dataset_file=data_file, 
+                    split_method=split_method, 
+                    window_size=window_size,
+                    remove_duplicates=True,
+                    label_type='next',
+                    shuffle=False
+                )
+                data_module.setup()
+                lightning_model = LogCNNLightning(
+                    vocab_size=data_module.vocab_size,
+                    embedding_dim=128,
+                    hidden_size=128,
+                    learning_rate=0.001,
+                    top_k=9
+                )
+            # elif model.lower() == "logbert":
+            #     data_module = IndexDataModule(dataset_file=data_file, split_method=split_method, window_size=window_size)
+            #     data_module.setup()
                 
+            #     lightning_model = LogBERTLightning(
+            #         vocab_size=data_module.vocab_size,
+            #     )
+            elif model.lower() in ["pca", "knn", "rf"]:
+                cpu_count = os.cpu_count() or 1
+                num_workers = max(1, (cpu_count * 2) // 3)
+                click.secho(f"Using {num_workers} workers for data loading.", fg="yellow")
+                vector_map_file = f"{path}/{dataset_name}/drain/fasttext/{dataset_name}_templates_vectors.pt"
+                data_module = MLDataModuleFromMerged(
+                    merged_file=data_file,
+                    vector_map_file=vector_map_file,
+                    window_size=window_size,
+                    num_workers=num_workers
+                )
+                model_params = {}
+                if model.lower() == "pca":
+                    model_params = {"n_components": 0.95, 'random_state': 42}
+                elif model.lower() == "knn":
+                    model_params = {"n_neighbors": k_neighbors, "n_jobs": -1}
+                elif model.lower() == "rf":
+                    model_params = {"n_estimators": 100, "random_state": 42, "n_jobs": -1}
+                
+                lightning_model = MLLightningModule(
+                    model_name=model.lower(),
+                    model_params=model_params,
+                )
+
               
-            if data_module and lightning_model:
+            if data_module and lightning_model and model.lower() in ['deeplog', 'logbert', 'logrobust', 'logcnn']:
                 checkpoint_callback = ModelCheckpoint(
                     monitor='val_loss',
                     mode='min',
@@ -130,14 +202,26 @@ def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, 
                         accelerator="auto"
                     )
                 
-                
-                
                 click.secho(f"Starting TRAIN and VALID for {model} on {dataset_name} with window size {window_size}...", fg="green")
                 trainer.fit(lightning_model, data_module)
                 
                 click.secho(f"Starting TEST for {model} on {dataset_name} with window size {window_size}...", fg="green")
                 trainer.test(datamodule=data_module, ckpt_path='best')
+            
+            elif data_module and lightning_model and model.lower() in ['pca', 'knn', 'rf']:
+                trainer = pl.Trainer(
+                    max_epochs=1,
+                    accelerator="cpu", # sklearn models run on CPU
+                    logger=False # Disable default logging for simplicity
+                )
+
+                click.secho(f"Starting TRAIN and VALID for {model} on {dataset_name} with window size {window_size}...", fg="green")
+                trainer.fit(lightning_model, data_module)
+                
+                click.secho(f"Starting TEST for {model} on {dataset_name} with window size {window_size}...", fg="green")
+                trainer.test(datamodule=data_module, ckpt_path='last')
                 click.secho(f"Model: {model}, Dataset: {dataset_name}, Window Size: {window_size}, Split Method: {split_method}", fg="blue")
+                
         finally:
             if use_wandb:
                 wandb.finish()
