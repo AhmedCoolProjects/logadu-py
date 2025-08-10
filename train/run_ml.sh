@@ -1,11 +1,15 @@
 #!/bin/bash
 
 # Define the arrays
-models=("knn" "pca" "rf")
-# datasets=("Fox" "Russellmitchell")
-datasets=("Linux24APT" "Fox" "Russellmitchell")
+models=("knn" )
+# models=("knn" "pca" "rf")
+# datasets=("Fox")
+# datasets=("Linux24APT" "Fox" "Russellmitchell")
+datasets=("Linux24APT")
 # datasets=("Win25ChAPT" "Linux24APT" "Fox" "Russellmitchell")
-window_sizes=(5 10 20 30 60)
+# window_sizes=(30)
+window_sizes=(10 30)
+# window_sizes=(5 10 20 30 60)
 
 # Define common path
 PATH_DIR="/home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation"
@@ -28,7 +32,8 @@ for model in "${models[@]}"; do
             echo "[$current_run/$total_runs] Processing: $model | $dataset | window_size=$window_size"
             
             # Run the logadu command
-            logadu run "$model" "$dataset" "$window_size" --path "$PATH_DIR" --k-neighbors 5
+            logadu run "$model" "$dataset" "$window_size" --path "$PATH_DIR" --k-neighbors 1 --n-estimators 30 --n-components 0.80
+            # logadu run "$model" "$dataset" "$window_size" --path "$PATH_DIR" --k-neighbors 5 --n-estimators 100 --n-components 0.95
             
             # Check if the command was successful
             if [ $? -eq 0 ]; then

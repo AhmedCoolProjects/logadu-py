@@ -1,0 +1,48 @@
+Starting ML training batch job at Sat Aug  9 15:24:03 +01 2025
+Job ID: 5077931
+Running on node: slurm-himem-h22a8-u3-sv
+==================================
+Starting batch processing: 3 total runs
+Models: knn pca rf
+Datasets: Fox
+Window sizes: 60
+==================================
+[1/3] Processing: knn | Fox | window_size=60
+Using 74 workers for data loading.
+Starting TRAIN and VALID for knn on Fox with window size 60...
+--- Step 1: Loading input files ---
+Loaded 687989 log events and a map of 6132 template vectors.
+--- Step 2: Generating and processing sequences with window_size=60 ---
+Found 1463 zero vectors in the aggregated feature vectors. out of 687929
+--- Step 3: Performing chronological train-val-test split ---
+Sanity Checking: |          | 0/? [00:00<?, ?it/s]Sanity Checking:   0%|          | 0/2 [00:00<?, ?it/s]Sanity Checking DataLoader 0:   0%|          | 0/2 [00:00<?, ?it/s]Sanity Checking DataLoader 0:  50%|█████     | 1/2 [00:00<00:00, 241.29it/s]Sanity Checking DataLoader 0: 100%|██████████| 2/2 [00:00<00:00, 352.83it/s]                                                                            Training: |          | 0/? [00:00<?, ?it/s]
+--- Fitting sklearn model: KNN ---
+✗ Error processing: knn Fox 60
+---
+[2/3] Processing: pca | Fox | window_size=60
+Using 74 workers for data loading.
+Starting TRAIN and VALID for pca on Fox with window size 60...
+--- Step 1: Loading input files ---
+Loaded 687989 log events and a map of 6132 template vectors.
+--- Step 2: Generating and processing sequences with window_size=60 ---
+Found 1463 zero vectors in the aggregated feature vectors. out of 687929
+--- Step 3: Performing chronological train-val-test split ---
+Sanity Checking: |          | 0/? [00:00<?, ?it/s]Sanity Checking:   0%|          | 0/2 [00:00<?, ?it/s]Sanity Checking DataLoader 0:   0%|          | 0/2 [00:00<?, ?it/s]Sanity Checking DataLoader 0:  50%|█████     | 1/2 [00:00<00:00, 1118.48it/s]Sanity Checking DataLoader 0: 100%|██████████| 2/2 [00:00<00:00, 446.04it/s]                                                                             Training: |          | 0/? [00:00<?, ?it/s]
+--- Fitting sklearn model: PCA ---
+✗ Error processing: pca Fox 60
+---
+[3/3] Processing: rf | Fox | window_size=60
+Using 74 workers for data loading.
+Starting TRAIN and VALID for rf on Fox with window size 60...
+--- Step 1: Loading input files ---
+Loaded 687989 log events and a map of 6132 template vectors.
+--- Step 2: Generating and processing sequences with window_size=60 ---
+Found 1463 zero vectors in the aggregated feature vectors. out of 687929
+--- Step 3: Performing chronological train-val-test split ---
+Sanity Checking: |          | 0/? [00:00<?, ?it/s]Sanity Checking:   0%|          | 0/2 [00:00<?, ?it/s]Sanity Checking DataLoader 0:   0%|          | 0/2 [00:00<?, ?it/s]Sanity Checking DataLoader 0:  50%|█████     | 1/2 [00:00<00:00, 283.49it/s]Sanity Checking DataLoader 0: 100%|██████████| 2/2 [00:00<00:00, 453.63it/s]                                                                            Training: |          | 0/? [00:00<?, ?it/s]
+--- Fitting sklearn model: RF ---
+✗ Error processing: rf Fox 60
+---
+All combinations processed! (3 total runs)
+==================================
+ML training batch job completed at Sat Aug  9 15:42:41 +01 2025

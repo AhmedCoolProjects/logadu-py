@@ -1,42 +1,46 @@
 #!/bin/bash
 
-# DataSets: Win25ChAPT, Linux24APT, Fox, Russellmitchell
-# window sizes: 5, 10, 20, 30, 60
-
-# Example: logadu run deeplog Fox 5 --path /home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation
-
-# Define datasets and window sizes
-datasets=("Win25ChAPT" "Linux24APT" "Fox" "Russellmitchell")
+# Define the arrays
+datasets=("Linux24APT" "Fox" "Russellmitchell")
 window_sizes=(5 10 20 30 60)
+topk_values=(3 9)
 
-# Base path for datasets
-base_path="/home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation"
+# Define common path
+PATH_DIR="/home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation"
 
-# Function to run a command on the combination of dataset and window size
-run_logadu() {
-    local dataset=$1
-    local window_size=$2
-    
-    echo "Running logadu with dataset: $dataset, window size: $window_size"
-    logadu run deeplog "$dataset" "$window_size" --path "$base_path"
-    
-    # Check if command was successful
-    if [ $? -eq 0 ]; then
-        echo "✓ Successfully completed: $dataset with window size $window_size"
-    else
-        echo "✗ Failed: $dataset with window size $window_size"
-    fi
-    echo "----------------------------------------"
-}
+# Create log files with timestamp
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+OUTPUT_LOG="/home/ahmed.bargady/lustre/nlp_team-um6p-st-sccs-id7fz1zvotk/IDS/ahmed.bargady/data/github/logs-ad-ultimate/logadu-package/train/run_deeplog_output_${TIMESTAMP}.log"
+ERROR_LOG="/home/ahmed.bargady/lustre/nlp_team-um6p-st-sccs-id7fz1zvotk/IDS/ahmed.bargady/data/github/logs-ad-ultimate/logadu-package/train/run_deeplog_error_${TIMESTAMP}.log"
 
-# Main execution loop
-echo "Starting logadu runs for all dataset and window size combinations..."
-echo "========================================"
+# Counter for tracking progress
+total_runs=$((${#datasets[@]} * ${#window_sizes[@]} * ${#topk_values[@]}))
+current_run=0
 
+echo "Starting batch processing: $total_runs total runs" | tee -a "$OUTPUT_LOG"
+echo "Datasets: ${datasets[*]}" | tee -a "$OUTPUT_LOG"
+echo "Window sizes: ${window_sizes[*]}" | tee -a "$OUTPUT_LOG"
+echo "TopK values: ${topk_values[*]}" | tee -a "$OUTPUT_LOG"
+echo "Output log: $OUTPUT_LOG" | tee -a "$OUTPUT_LOG"
+echo "Error log: $ERROR_LOG" | tee -a "$OUTPUT_LOG"
+echo "==================================" | tee -a "$OUTPUT_LOG"
+
+# Triple nested loop for all combinations
 for dataset in "${datasets[@]}"; do
     for window_size in "${window_sizes[@]}"; do
-        run_logadu "$dataset" "$window_size"
+        for topk in "${topk_values[@]}"; do
+            current_run=$((current_run + 1))
+            echo "[$current_run/$total_runs] Processing: deeplog | $dataset | window_size=$window_size | topk=$topk" | tee -a "$OUTPUT_LOG"
+            
+            # Run the logadu command
+            if logadu run "deeplog" "$dataset" "$window_size" --path "$PATH_DIR" --topk "$topk" >> "$OUTPUT_LOG" 2>> "$ERROR_LOG"; then
+                echo "✓ Successfully processed: deeplog $dataset $window_size topk=$topk" | tee -a "$OUTPUT_LOG"
+            else
+                echo "✗ Error processing: deeplog $dataset $window_size topk=$topk" | tee -a "$OUTPUT_LOG" "$ERROR_LOG"
+            fi
+            echo "---" | tee -a "$OUTPUT_LOG"
+        done
     done
 done
 
-echo "All runs completed!"
+echo "All combinations processed! ($total_runs total runs)" | tee -a "$OUTPUT_LOG"

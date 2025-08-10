@@ -25,6 +25,9 @@ from logadu.datamodules.vector_template import NoAggDataModule
 # ----------------- LogCNN ----------------
 from logadu.modellightning.logcnn import LogCNNLightning
 
+# ----------------- PLELog ----------------
+from logadu.modellightning.plelog import PLELogLightning
+
 
 torch.set_float32_matmul_precision('high')  # Enable Tensor Cores for faster training
 
@@ -32,7 +35,7 @@ torch.set_float32_matmul_precision('high')  # Enable Tensor Cores for faster tra
 # logadu run knn Fox 5 --path .../implementation --vector-map-file .../vector.pt --k-neighbors 5
 
 @click.command()
-@click.argument("model", type=click.Choice(['deeplog', 'logbert', 'logrobust', 'logcnn', 'pca', 'knn', 'rf']))
+@click.argument("model", type=click.Choice(['deeplog', 'logbert', 'logrobust', 'logcnn', 'plelog', 'pca', 'knn', 'rf']))
 @click.argument("dataset_name", type=str)
 @click.argument("window_size", type=int)
 @click.option("--split-method", default=1, type=int, help="Which split type to use, 1: train/valid/test on squences, 2: train/valid/test log file, then sequencing with step size=1 for train, and step size=window size for valid and test.")
@@ -40,9 +43,13 @@ torch.set_float32_matmul_precision('high')  # Enable Tensor Cores for faster tra
 @click.option("--path", type=click.Path(exists=True), help="Path to the dataset file.")
 @click.option("--epochs", default=50, help="Number of epochs for training.")
 @click.option("--k-neighbors", default=5, help="[KNN] Number of neighbors.")
+@click.option("--n-estimators", default=100, help="[KNN] Number of estimators.")
+@click.option("--n-components", default=0.95, help="[KNN] Number of components.")
+@click.option("--topk", default=9, help="DeepLog and LogCNN: Top K most frequent templates to use for training.")
+@click.option("--hidden-size", default=128, help="Hidden size for the LSTM layers in LogRobust and LogCNN.")
 @click.option("--use-wandb", is_flag=True, help="Use Weights & Biases for logging.")
 @click.option("--wandb-project", default="first_lad_in_apts", help="W&B project name to log runs to.")
-def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, k_neighbors, use_wandb, wandb_project):
+def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, k_neighbors, n_estimators, n_components, topk, hidden_size, use_wandb, wandb_project):
 
     data_file = f"{path}/{dataset_name}/drain/{dataset_name}_merged.csv"
     
@@ -106,23 +113,37 @@ def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, 
                     hidden_size=128,
                     num_layers=2,   
                     embedding_dim=128,
+                    top_k=topk  # Use top_k templates
                 )
             elif model.lower() == "logrobust":
                 data_module = NoAggDataModule(
                     merged_file=data_file,
                     vector_map_file=f"{path}/{dataset_name}/drain/fasttext/{dataset_name}_templates_vectors.pt",
                     window_size=window_size,
-                    batch_size=256,
-                    num_workers=84,
+                    batch_size=64,
+                    num_workers=2,
                     aggregate=False  # No aggregation for LogRobust
                 )
                 data_module.setup()
                 
                 lightning_model = LogRobustLightning(
                     input_dim=data_module.input_dim,
-                    hidden_size=128,
+                    hidden_size=hidden_size,
                     num_layers=2
                 )
+            elif model.lower() == "plelog":
+                data_module = NoAggDataModule(
+                    merged_file=data_file,
+                    vector_map_file=f"{path}/{dataset_name}/drain/fasttext/{dataset_name}_templates_vectors.pt",
+                    window_size=window_size,
+                    num_workers=48,
+                    aggregate=False,  # No aggregation for PLELog
+                )
+                data_module.setup()
+                lightning_model = PLELogLightning(
+                    input_dim=data_module.input_dim,
+                )
+                
             elif model.lower() == "logcnn":
                 data_module = IndexDataModule(
                     dataset_file=data_file, 
@@ -138,7 +159,7 @@ def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, 
                     embedding_dim=128,
                     hidden_size=128,
                     learning_rate=0.001,
-                    top_k=9
+                    top_k=topk
                 )
             # elif model.lower() == "logbert":
             #     data_module = IndexDataModule(dataset_file=data_file, split_method=split_method, window_size=window_size)
@@ -149,7 +170,8 @@ def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, 
             #     )
             elif model.lower() in ["pca", "knn", "rf"]:
                 cpu_count = os.cpu_count() or 1
-                num_workers = max(1, (cpu_count * 2) // 3)
+                # num_workers = max(1, (cpu_count * 2) // 3)
+                num_workers = 8
                 click.secho(f"Using {num_workers} workers for data loading.", fg="yellow")
                 vector_map_file = f"{path}/{dataset_name}/drain/fasttext/{dataset_name}_templates_vectors.pt"
                 data_module = MLDataModuleFromMerged(
@@ -160,11 +182,11 @@ def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, 
                 )
                 model_params = {}
                 if model.lower() == "pca":
-                    model_params = {"n_components": 0.95, 'random_state': 42}
+                    model_params = {"n_components": n_components, 'random_state': 42}
                 elif model.lower() == "knn":
                     model_params = {"n_neighbors": k_neighbors, "n_jobs": -1}
                 elif model.lower() == "rf":
-                    model_params = {"n_estimators": 100, "random_state": 42, "n_jobs": -1}
+                    model_params = {"n_estimators": n_estimators, "random_state": 42, "n_jobs": -1}
                 
                 lightning_model = MLLightningModule(
                     model_name=model.lower(),
@@ -172,7 +194,7 @@ def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, 
                 )
 
               
-            if data_module and lightning_model and model.lower() in ['deeplog', 'logbert', 'logrobust', 'logcnn']:
+            if data_module and lightning_model and model.lower() in ['deeplog', 'logbert', 'logrobust', 'logcnn', 'plelog']:
                 checkpoint_callback = ModelCheckpoint(
                     monitor='val_loss',
                     mode='min',

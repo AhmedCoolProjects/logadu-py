@@ -4,7 +4,6 @@ import torch
 import pandas as pd
 from tqdm import tqdm
 from torch.utils.data import TensorDataset, DataLoader
-import pickle
 
 class NoAggDataModule(pl.LightningDataModule):
     """
