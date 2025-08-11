@@ -3,6 +3,8 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.loggers import WandbLogger
 import os
+import psutil
+import gc
 import wandb
 # from sklearn.metrics import classification_report
 import torch
@@ -50,7 +52,12 @@ torch.set_float32_matmul_precision('high')  # Enable Tensor Cores for faster tra
 @click.option("--use-wandb", is_flag=True, help="Use Weights & Biases for logging.")
 @click.option("--wandb-project", default="first_lad_in_apts", help="W&B project name to log runs to.")
 def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, k_neighbors, n_estimators, n_components, topk, hidden_size, use_wandb, wandb_project):
-
+    
+    memory = psutil.virtual_memory()
+    available_gb = memory.available / (1024**3)
+    click.secho(f"Available memory: {available_gb:.2f} GB", fg="yellow")
+    
+    
     data_file = f"{path}/{dataset_name}/drain/{dataset_name}_merged.csv"
     
     output_dir = f"{path}/{dataset_name}/models/{split_method}/{model.lower()}"
@@ -120,8 +127,8 @@ def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, 
                     merged_file=data_file,
                     vector_map_file=f"{path}/{dataset_name}/drain/fasttext/{dataset_name}_templates_vectors.pt",
                     window_size=window_size,
-                    batch_size=64,
-                    num_workers=2,
+                    batch_size=265,
+                    num_workers=1,
                     aggregate=False  # No aggregation for LogRobust
                 )
                 data_module.setup()

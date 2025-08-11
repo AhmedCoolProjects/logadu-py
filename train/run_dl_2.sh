@@ -3,15 +3,15 @@
 # Define the arrays
 models=("logrobust")
 # models=("logcnn" "logrobust")
-datasets=("Fox" "Russellmitchell")
+# datasets=("Fox" "Russellmitchell")
 # NEXT
-# datasets=("Fox")
+datasets=("Fox")
 # datasets=("Fox" "Russellmitchell")
 # datasets=("Linux24APT" "Fox" "Russellmitchell")
-window_sizes=(60)
+# window_sizes=(60)
 # NEXT
 #  window_sizes=(30)
-# window_sizes=(5 10 20 30 60)
+window_sizes=(10 20 30 60)
 
 # Define common path
 PATH_DIR="/home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation"
@@ -40,20 +40,20 @@ for model in "${models[@]}"; do
         for window_size in "${window_sizes[@]}"; do
             current_run=$((current_run + 1))
             
-            # Set model-specific parameters
-            if [ "$model" = "logcnn" ]; then
-                model_params="--topk 3"
-                echo "[$current_run/$total_runs] Processing: $model | $dataset | window_size=$window_size | topk=3" | tee -a "$OUTPUT_LOG"
-            elif [ "$model" = "logrobust" ]; then
-                model_params="--hidden-size 32"
-                echo "[$current_run/$total_runs] Processing: $model | $dataset | window_size=$window_size | hidden-size=32" | tee -a "$OUTPUT_LOG"
-            fi
+            # # Set model-specific parameters
+            # if [ "$model" = "logcnn" ]; then
+            #     model_params="--topk 3"
+            #     echo "[$current_run/$total_runs] Processing: $model | $dataset | window_size=$window_size | topk=3" | tee -a "$OUTPUT_LOG"
+            # elif [ "$model" = "logrobust" ]; then
+            #     model_params="--hidden-size 32"
+            #     echo "[$current_run/$total_runs] Processing: $model | $dataset | window_size=$window_size | hidden-size=32" | tee -a "$OUTPUT_LOG"
+            # fi
             
             # Run the logadu command with model-specific parameters
-            if logadu run "$model" "$dataset" "$window_size" --path "$PATH_DIR" $model_params >> "$OUTPUT_LOG" 2>> "$ERROR_LOG"; then
-                echo "✓ Successfully processed: $model $dataset $window_size with $model_params" | tee -a "$OUTPUT_LOG"
+            if logadu run "$model" "$dataset" "$window_size" --path "$PATH_DIR"  >> "$OUTPUT_LOG" 2>> "$ERROR_LOG"; then
+                echo "✓ Successfully processed: $model $dataset $window_size with " | tee -a "$OUTPUT_LOG"
             else
-                echo "✗ Error processing: $model $dataset $window_size with $model_params" | tee -a "$OUTPUT_LOG" "$ERROR_LOG"
+                echo "✗ Error processing: $model $dataset $window_size with " | tee -a "$OUTPUT_LOG" "$ERROR_LOG"
             fi
             echo "---" | tee -a "$OUTPUT_LOG"
         done

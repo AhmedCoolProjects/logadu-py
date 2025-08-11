@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Define the arrays
-datasets=("Fox" "Russellmitchell")
+datasets=("Fox")
 # datasets=("Linux24APT" "Fox" "Russellmitchell")
-window_sizes=(5 10 20 30 60)
+window_sizes=(20 30 60)
 # window_sizes=(5 10 20 30 60)
 
 # Define common path
