@@ -8,6 +8,7 @@ import click
 # from logadu.commands.evaluate import evaluate
 # from logadu.commands.convert import convert
 from logadu.commands.vectorize import vectorize
+from logadu.commands.vectorize_bert import vectorizebert
 from logadu.commands.run import run
 
 @click.group()
@@ -27,6 +28,7 @@ def cli():
 # # cli.add_command(semantic)
 # cli.add_command(represent)
 cli.add_command(vectorize)
+cli.add_command(vectorizebert)
 # cli.add_command(convert)
 cli.add_command(run)
 # # Training
