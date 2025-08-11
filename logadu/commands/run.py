@@ -30,6 +30,9 @@ from logadu.modellightning.logcnn import LogCNNLightning
 # ----------------- PLELog ----------------
 from logadu.modellightning.plelog import PLELogLightning
 
+# ----------------- NeuralLog ---------------
+from logadu.modellightning.neurallog import NeuralLogLightning
+
 
 torch.set_float32_matmul_precision('high')  # Enable Tensor Cores for faster training
 
@@ -37,7 +40,7 @@ torch.set_float32_matmul_precision('high')  # Enable Tensor Cores for faster tra
 # logadu run knn Fox 5 --path .../implementation --vector-map-file .../vector.pt --k-neighbors 5
 
 @click.command()
-@click.argument("model", type=click.Choice(['deeplog', 'logbert', 'logrobust', 'logcnn', 'plelog', 'pca', 'knn', 'rf']))
+@click.argument("model", type=click.Choice(['deeplog', 'logbert', 'logrobust', 'logcnn', 'plelog', 'neurallog', 'pca', 'knn', 'rf']))
 @click.argument("dataset_name", type=str)
 @click.argument("window_size", type=int)
 @click.option("--split-method", default=1, type=int, help="Which split type to use, 1: train/valid/test on squences, 2: train/valid/test log file, then sequencing with step size=1 for train, and step size=window size for valid and test.")
@@ -138,6 +141,38 @@ def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, 
                     hidden_size=hidden_size,
                     num_layers=2
                 )
+            elif model.lower() == "neurallog":
+                N_HEADS = 8 # Number of attention heads. Must be a divisor of INPUT_DIMENSION.
+                TRANSFORMER_HIDDEN_DIM = 2048 # Dimension of the feed-forward layer inside the transformer.
+                N_LAYERS = 2 # Number of transformer encoder layers to stack.
+                DROPOUT = 0.1
+                LEARNING_RATE = 3e-5 # Transformers often benefit from smaller learning rates
+
+                BATCH_SIZE = 64
+            
+                data_module = NoAggDataModule(
+                    merged_file=data_file,
+                    vector_map_file=f"{path}/{dataset_name}/drain/{dataset_name}_bert_vectors.pt",
+                    window_size=window_size,
+                    batch_size=BATCH_SIZE,
+                    num_workers=1,
+                    aggregate=False  # No aggregation for NeuralLog
+                )
+                data_module.setup()
+                
+                INPUT_DIM = data_module.input_dim
+                if INPUT_DIM % N_HEADS != 0:
+                    raise ValueError(f"INPUT_DIM ({INPUT_DIM}) must be divisible by N_HEADS ({N_HEADS}).")
+                click.secho(f"Using NeuralLog with INPUT_DIM={INPUT_DIM}, N_HEADS={N_HEADS}", fg="green")
+                
+                lightning_model = NeuralLogLightning(
+                    input_dim=INPUT_DIM,
+                    n_head=N_HEADS,
+                    hidden_dim=TRANSFORMER_HIDDEN_DIM,
+                    n_layers=N_LAYERS,
+                    learning_rate=LEARNING_RATE,
+                    dropout=DROPOUT
+                )
             elif model.lower() == "plelog":
                 data_module = NoAggDataModule(
                     merged_file=data_file,
@@ -201,7 +236,7 @@ def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, 
                 )
 
               
-            if data_module and lightning_model and model.lower() in ['deeplog', 'logbert', 'logrobust', 'logcnn', 'plelog']:
+            if data_module and lightning_model and model.lower() in ['deeplog', 'logbert', 'logrobust', 'logcnn', 'plelog', 'neurallog']:
                 checkpoint_callback = ModelCheckpoint(
                     monitor='val_loss',
                     mode='min',
