@@ -3,8 +3,15 @@ import pytorch_lightning as pl
 import torch
 import pandas as pd
 from tqdm import tqdm
+import os
 from torch.utils.data import TensorDataset, DataLoader
-
+try:
+    import psutil
+    _PROC = psutil.Process(os.getpid())
+except ImportError:
+    psutil = None
+    
+    
 class NoAggDataModule(pl.LightningDataModule):
     """
     A unified DataModule for both traditional and deep learning models that
@@ -44,6 +51,7 @@ class NoAggDataModule(pl.LightningDataModule):
         all_labels = []
         
         iterator = range(len(df) - self.window_size)
+        pbar = tqdm(iterator, desc="Processing sequences")
         for i in tqdm(iterator, desc="Processing sequences"):
             window_df = df.iloc[i : i + self.window_size]
             
@@ -56,6 +64,18 @@ class NoAggDataModule(pl.LightningDataModule):
             
             all_sequences.append(vectors_in_sequence)
             all_labels.append(seq_label)
+            
+            # Update memory stats every 1000 iterations to limit overhead
+            if i % 1000 == 0:
+                if psutil:
+                    rss_mb = _PROC.memory_info().rss / (1024 ** 2)
+                    postfix = {"RAM_MB": f"{rss_mb:,.0f}"}
+                else:
+                    postfix = {"RAM_MB": "psutil_missing"}
+                if torch.cuda.is_available():
+                    gpu_mb = torch.cuda.memory_allocated() / (1024 ** 2)
+                    postfix["GPU_MB"] = f"{gpu_mb:,.0f}"
+                pbar.set_postfix(postfix)
 
         # --- 3. Optional Aggregation Step ---
         if self.aggregate:

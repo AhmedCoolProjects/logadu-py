@@ -2,16 +2,23 @@
 
 # Define the arrays
 models=("neurallog")
-datasets=("Linux24APT" "Fox" "Russellmitchell")
-window_sizes=(5 10 20 30 60)
+datasets=("Fox")
+# NEXT
+# datasets=("Russellmitchell")
+# datasets=("Linux24APT" "Fox" "Russellmitchell")
+window_sizes=(30 60)
+# NEXT
+# window_sizes=(5 60)
+# window_sizes=(5 10 20 30 60)
 
 # Define common path
-PATH_DIR="/home/gpuadmin/Desktop/ahmed.bargady/data"
+# PATH_DIR="/home/gpuadmin/Desktop/ahmed.bargady/data"
+PATH_DIR="/home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation"
 
 # Create log files with timestamp
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-OUTPUT_LOG="/home/gpuadmin/Desktop/ahmed.bargady/logadu-py/train/run_neurallog_output_${TIMESTAMP}.log"
-ERROR_LOG="/home/gpuadmin/Desktop/ahmed.bargady/logadu-py/train/run_neurallog_error_${TIMESTAMP}.log"
+OUTPUT_LOG="/home/ahmed.bargady/lustre/nlp_team-um6p-st-sccs-id7fz1zvotk/IDS/ahmed.bargady/data/github/logs-ad-ultimate/logadu-package/train/run_neurallog_output_${TIMESTAMP}.log"
+ERROR_LOG="/home/ahmed.bargady/lustre/nlp_team-um6p-st-sccs-id7fz1zvotk/IDS/ahmed.bargady/data/github/logs-ad-ultimate/logadu-package/train/run_neurallog_error_${TIMESTAMP}.log"
 
 # Counter for tracking progress
 total_runs=$((${#models[@]} * ${#datasets[@]} * ${#window_sizes[@]}))
