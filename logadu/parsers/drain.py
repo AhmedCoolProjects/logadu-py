@@ -223,16 +223,30 @@ class DrainParser:
         log_messages = []
         linecount = 0
         
-        with open(log_file, 'r', encoding='utf8', errors='ignore') as fin:
-            for line in tqdm(fin.readlines(), desc='Loading log file'):
-                try:
-                    match = regex.search(line.strip())
-                    if match:
-                        message = [match.group(header) for header in headers]
-                        log_messages.append(message)
-                        linecount += 1
-                except Exception:
+        src_df = pd.read_csv(log_file, low_memory=False)
+        if 'Content' not in src_df.columns:
+            raise ValueError("CSV file must contain a 'Content' column.")
+        for line in tqdm(src_df['Content'].astype(str), desc='Loading log file'):
+            line_stripped = line.strip()
+            try:
+                match = regex.search(line_stripped)
+                if match:
+                    message = [match.group(header) for header in headers]
+                    log_messages.append(message)
+                    linecount += 1
+            except Exception:
                     continue
+        
+        # with open(log_file, 'r', encoding='utf8', errors='ignore') as fin:
+        #     for line in tqdm(fin.readlines(), desc='Loading log file'):
+        #         try:
+        #             match = regex.search(line.strip())
+        #             if match:
+        #                 message = [match.group(header) for header in headers]
+        #                 log_messages.append(message)
+        #                 linecount += 1
+        #         except Exception:
+        #             continue
         
         logdf = pd.DataFrame(log_messages, columns=headers)
         logdf.insert(0, 'LineId', None)
