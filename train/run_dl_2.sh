@@ -5,13 +5,13 @@ models=("logrobust")
 # models=("logcnn" "logrobust")
 # datasets=("Fox" "Russellmitchell")
 # NEXT
-datasets=("Fox")
-# datasets=("Fox" "Russellmitchell")
+# datasets=("Fox")
+datasets=("Fox" "Russellmitchell")
 # datasets=("Linux24APT" "Fox" "Russellmitchell")
-# window_sizes=(60)
+window_sizes=(60)
 # NEXT
 #  window_sizes=(30)
-window_sizes=(10 20 30 60)
+# window_sizes=(10 20 30 60)
 
 # Define common path
 PATH_DIR="/home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation"
