@@ -5,10 +5,10 @@ models=("logrobust")
 # models=("logcnn" "logrobust")
 # datasets=("Fox" "Russellmitchell")
 # NEXT
-# datasets=("Fox")
-datasets=("Fox" "Russellmitchell")
+datasets=("Fox")
+# datasets=("Fox" "Russellmitchell")
 # datasets=("Linux24APT" "Fox" "Russellmitchell")
-window_sizes=(60)
+window_sizes=(20 30)
 # NEXT
 #  window_sizes=(30)
 # window_sizes=(10 20 30 60)
