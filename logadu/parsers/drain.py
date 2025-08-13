@@ -220,22 +220,22 @@ class DrainParser:
 
     def _log_to_dataframe(self, log_file: str, regex: re.Pattern, headers: list) -> pd.DataFrame:
         """Convert log file to DataFrame"""
-        log_messages = []
-        linecount = 0
+        # log_messages = []
+        # linecount = 0
         
-        src_df = pd.read_csv(log_file, low_memory=False)
-        if 'Content' not in src_df.columns:
-            raise ValueError("CSV file must contain a 'Content' column.")
-        for line in tqdm(src_df['Content'].astype(str), desc='Loading log file'):
-            line_stripped = line.strip()
-            try:
-                match = regex.search(line_stripped)
-                if match:
-                    message = [match.group(header) for header in headers]
-                    log_messages.append(message)
-                    linecount += 1
-            except Exception:
-                    continue
+        # src_df = pd.read_csv(log_file, low_memory=False)
+        # if 'Content' not in src_df.columns:
+        #     raise ValueError("CSV file must contain a 'Content' column.")
+        # for line in tqdm(src_df['Content'].astype(str), desc='Loading log file'):
+        #     line_stripped = line.strip()
+        #     try:
+        #         match = regex.search(line_stripped)
+        #         if match:
+        #             message = [match.group(header) for header in headers]
+        #             log_messages.append(message)
+        #             linecount += 1
+        #     except Exception:
+        #             continue
         
         # with open(log_file, 'r', encoding='utf8', errors='ignore') as fin:
         #     for line in tqdm(fin.readlines(), desc='Loading log file'):
@@ -248,9 +248,10 @@ class DrainParser:
         #         except Exception:
         #             continue
         
-        logdf = pd.DataFrame(log_messages, columns=headers)
+        
+        logdf = pd.read_csv(log_file, low_memory=False)
         logdf.insert(0, 'LineId', None)
-        logdf['LineId'] = range(1, linecount + 1)
+        logdf['LineId'] = range(1, len(logdf) + 1)
         return logdf
 
     def _preprocess(self, line: str) -> str:
@@ -286,8 +287,9 @@ class DrainParser:
         # make sure the len of org_df is the same as df_log
         if len(org_df) != len(self.df_log):
             raise ValueError("Original log DataFrame length does not match parsed DataFrame length.")
-        self.df_log['Content'] = org_df['Content'] if 'Content' in org_df else None
-        self.df_log['Label'] = org_df['Label'] if 'Label' in org_df else None
+        if 'Content' not in self.df_log.columns or 'Label' not in self.df_log.columns:
+            self.df_log['Content'] = org_df['Content'] if 'Content' in org_df else None
+            self.df_log['Label'] = org_df['Label'] if 'Label' in org_df else None
         
         if False:  # Don't Keep parameters option
             self.df_log['ParameterList'] = self.df_log.apply(
