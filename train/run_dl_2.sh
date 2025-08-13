@@ -12,14 +12,16 @@ window_sizes=(60)
 # NEXT
 #  window_sizes=(30)
 # window_sizes=(10 20 30 60)
+PATH_DIR="/home/gpuadmin/Desktop/ahmed.bargady/data"
+# # Define common path
+# PATH_DIR="/home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation"
 
-# Define common path
-PATH_DIR="/home/ahmed.bargady/lustre/data_sec-um6p-st-sccs-6sevvl76uja/IDS/ahmed.bargady/datasets/AITv2/implementation"
-
-# Create log files with timestamp
+# # Create log files with timestamp
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-OUTPUT_LOG="/home/ahmed.bargady/lustre/nlp_team-um6p-st-sccs-id7fz1zvotk/IDS/ahmed.bargady/data/github/logs-ad-ultimate/logadu-package/train/run_dl_2_output_${TIMESTAMP}.log"
-ERROR_LOG="/home/ahmed.bargady/lustre/nlp_team-um6p-st-sccs-id7fz1zvotk/IDS/ahmed.bargady/data/github/logs-ad-ultimate/logadu-package/train/run_dl_2_error_${TIMESTAMP}.log"
+# OUTPUT_LOG="/home/ahmed.bargady/lustre/nlp_team-um6p-st-sccs-id7fz1zvotk/IDS/ahmed.bargady/data/github/logs-ad-ultimate/logadu-package/train/run_dl_2_output_${TIMESTAMP}.log"
+# ERROR_LOG="/home/ahmed.bargady/lustre/nlp_team-um6p-st-sccs-id7fz1zvotk/IDS/ahmed.bargady/data/github/logs-ad-ultimate/logadu-package/train/run_dl_2_error_${TIMESTAMP}.log"
+OUTPUT_LOG="/home/gpuadmin/Desktop/ahmed.bargady/data/logs/logrobust_output_${TIMESTAMP}.log"
+ERROR_LOG="/home/gpuadmin/Desktop/ahmed.bargady/data/logs/logrobust_error_${TIMESTAMP}.log"
 
 # Counter for tracking progress
 total_runs=$((${#models[@]} * ${#datasets[@]} * ${#window_sizes[@]}))
