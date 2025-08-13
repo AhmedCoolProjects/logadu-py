@@ -2,8 +2,8 @@
 
 # Define the arrays
 # datasets=("Fox")
-datasets=("Fox" "Russellmitchell")
-window_sizes=(60)
+datasets=("Fox")
+window_sizes=(20 30)
 # window_sizes=(5 10 20 30 60)
 
 PATH_DIR="/home/gpuadmin/Desktop/ahmed.bargady/data"
