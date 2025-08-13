@@ -148,7 +148,7 @@ def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, 
                 DROPOUT = 0.1
                 LEARNING_RATE = 3e-5 # Transformers often benefit from smaller learning rates
 
-                BATCH_SIZE = 64
+                BATCH_SIZE = 128 * 4
             
                 data_module = NoAggDataModule(
                     merged_file=data_file,

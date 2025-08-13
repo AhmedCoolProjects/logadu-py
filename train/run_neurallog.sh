@@ -6,7 +6,7 @@ datasets=("Fox")
 # NEXT
 # datasets=("Russellmitchell")
 # datasets=("Linux24APT" "Fox" "Russellmitchell")
-window_sizes=(30 60)
+window_sizes=(60)
 # NEXT
 # window_sizes=(5 60)
 # window_sizes=(5 10 20 30 60)

@@ -1,5 +1,5 @@
 import click
-# from logadu.commands.parse import parse
+from logadu.commands.parse import parse
 # from logadu.commands.merge import merge
 # from logadu.commands.seq import seq
 # from logadu.commands.train import train
@@ -17,7 +17,7 @@ def cli():
     pass
 
 # Log parsing
-# cli.add_command(parse)
+cli.add_command(parse)
 # cli.add_command(merge)
 # # Feature Extraction
 # ## Sequence vectors

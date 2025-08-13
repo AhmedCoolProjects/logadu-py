@@ -4,7 +4,7 @@ import pandas as pd
 import hashlib
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Optional
 from tqdm import tqdm
 
 class LogCluster:
@@ -50,6 +50,7 @@ class DrainParser:
             output_dir: Directory to save results
             log_format: Log format string
         """
+        self.input_path = input_path
         self.logname = Path(input_path).stem
         self.savePath = output_dir
         self.log_format = log_format
@@ -267,12 +268,20 @@ class DrainParser:
         self.df_log['EventId'] = template_ids
         self.df_log['EventTemplate'] = templates
         
-        if self.keep_para:
+        org_df = pd.read_csv(self.input_path, low_memory=False)
+        # make sure the len of org_df is the same as df_log
+        if len(org_df) != len(self.df_log):
+            raise ValueError("Original log DataFrame length does not match parsed DataFrame length.")
+        self.df_log['Content'] = org_df['Content'] if 'Content' in org_df else None
+        self.df_log['Label'] = org_df['Label'] if 'Label' in org_df else None
+        
+        if False:  # Don't Keep parameters option
             self.df_log['ParameterList'] = self.df_log.apply(
                 self._get_parameter_list, axis=1
             )
         
         # Save structured logs
+        # keep all original cols from 
         self.df_log.to_csv(
             os.path.join(self.savePath, f'{self.logname}_structured.csv'),
             index=False
