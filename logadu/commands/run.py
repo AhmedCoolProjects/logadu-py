@@ -212,8 +212,7 @@ def run(model, dataset_name, window_size, split_method, n_splits, path, epochs, 
             #     )
             elif model.lower() in ["pca", "knn", "rf"]:
                 cpu_count = os.cpu_count() or 1
-                # num_workers = max(1, (cpu_count * 2) // 3)
-                num_workers = 8
+                num_workers = max(1, (cpu_count * 2) // 3)
                 click.secho(f"Using {num_workers} workers for data loading.", fg="yellow")
                 vector_map_file = f"{path}/{dataset_name}/drain/fasttext/{dataset_name}_templates_vectors.pt"
                 data_module = MLDataModuleFromMerged(

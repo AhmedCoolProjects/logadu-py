@@ -291,10 +291,10 @@ class DrainParser:
             self.df_log['Content'] = org_df['Content'] if 'Content' in org_df else None
             self.df_log['Label'] = org_df['Label'] if 'Label' in org_df else None
         
-        if False:  # Don't Keep parameters option
-            self.df_log['ParameterList'] = self.df_log.apply(
-                self._get_parameter_list, axis=1
-            )
+        # if False:  # Don't Keep parameters option
+        #     self.df_log['ParameterList'] = self.df_log.apply(
+        #         self._get_parameter_list, axis=1
+        #     )
         
         # Save structured logs
         # keep all original cols from 
@@ -309,21 +309,21 @@ class DrainParser:
             index=False
         )
 
-    def _get_parameter_list(self, row) -> List[str]:
-        """Extract parameters from log message"""
-        if not self.keep_para:
-            return []
+    # def _get_parameter_list(self, row) -> List[str]:
+    #     """Extract parameters from log message"""
+    #     if not self.keep_para:
+    #         return []
             
-        template = re.sub(r"<.{1,5}>", "<*>", str(row["EventTemplate"]))
-        if "<*>" not in template:
-            return []
+        # template = re.sub(r"<.{1,5}>", "<*>", str(row["EventTemplate"]))
+        # if "<*>" not in template:
+        #     return []
         
-        template = re.sub(r'([^A-Za-z0-9])', r'\\\1', template)
-        template = re.sub(r' +', r'\\s+', template)
-        template = "^" + template.replace("\<\*\>", "(.*?)") + "$"
+        # template = re.sub(r'([^A-Za-z0-9])', r'\\\1', template)
+        # template = re.sub(r' +', r'\\s+', template)
+        # template = "^" + template.replace("\<\*\>", "(.*?)") + "$"
         
-        params = re.findall(template, row["Content"])
-        params = params[0] if params else ()
-        params = list(params) if isinstance(params, tuple) else [params]
+        # params = re.findall(template, row["Content"])
+        # params = params[0] if params else ()
+        # params = list(params) if isinstance(params, tuple) else [params]
         
-        return [p.strip() for p in params if p.strip()]
+        # return [p.strip() for p in params if p.strip()]
