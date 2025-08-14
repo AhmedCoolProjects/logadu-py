@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
     
-__version__ = "0.2.11"  # Update this version as needed
+__version__ = "0.2.12"  # Update this version as needed
 
 # Make pygraphviz optional
 
