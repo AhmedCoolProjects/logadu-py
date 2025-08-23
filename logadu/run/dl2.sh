@@ -19,7 +19,7 @@ WIN_SIZES=(30)
 
 
 DATASETS=(
-"fox" "santos" "harrison" "russellmitchell" known_c1 known_c2 known_c3 known_c4 known_c5 known_c6 known_c7 known_c8
+ "santos" "harrison" "russellmitchell" known_c1 known_c2 known_c3 known_c4 known_c5 known_c6 known_c7 known_c8
 )
 
 for win in "${WIN_SIZES[@]}"; do
