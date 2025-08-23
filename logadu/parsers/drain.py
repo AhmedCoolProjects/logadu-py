@@ -34,7 +34,7 @@ class DrainParser:
             rex: List of regex patterns for preprocessing
             keep_para: Whether to keep parameters in output
         """
-        self.depth = depth - 2  # Adjust for internal nodes
+        self.depth = depth
         self.st = sim_threshold
         self.maxChild = max_children
         self.rex = rex or []

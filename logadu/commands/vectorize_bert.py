@@ -12,12 +12,17 @@ def vectorizebert(gpath, dataname):
     """
     Vectorize log templates using the specified word embeddings (e.g., FastText, BERT).
     """
-    base_path = Path(gpath) / dataname / "drain"
-    merged_csv = base_path / f"{dataname}_merged.csv"
-    output_path = base_path / f"{dataname}_bert_vectors.pt"
     
-    log_column = "content"
+    structured_path = Path(gpath) / f"{dataname}_all_structured.csv"
+    if not structured_path.exists():
+        click.secho(f"Error: The file {structured_path} does not exist.", fg="red")
+        return
+    output_dir = Path(gpath) / "bert"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_file = output_dir / f"{dataname}_vectors.pt"
+    
+    log_column = "Content"
     event_id_column = "EventId"
     model_name = "bert-base-uncased"  # You can change this to any other BERT model
 
-    vectorization_with_bert(merged_csv, output_path, log_column, event_id_column, model_name, batch_size=128)
+    vectorization_with_bert(structured_path, output_file, log_column, event_id_column, model_name, batch_size=128)

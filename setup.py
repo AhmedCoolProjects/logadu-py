@@ -23,7 +23,8 @@ install_requires = [
     'wandb>=0.15',
     'joblib>=1.0',
     'transformers>=4.0',
-    'sentencepiece>=0.1'
+    'sentencepiece>=0.1',
+    'hdbscan>=0.8'
 ]
 
 extras_require = {

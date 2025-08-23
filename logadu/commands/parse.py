@@ -46,8 +46,7 @@ def parse(log_file, parser, leaf_num, short_threshold, log_format, tau, keep_par
         click.echo(f"Successfully parsed logs using Spell parser. Output saved to {Path(log_file).parent}/spell")
     elif parser == "drain":
         output_dir = Path(log_file).parent / 'drain'
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
         drain = DrainParser(
             depth=depth,
             sim_threshold=tau,

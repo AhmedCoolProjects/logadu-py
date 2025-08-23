@@ -6,10 +6,23 @@ __pycache__/
 wandb
 trained_models
 
+experiments/logs/*.err
+experiments/logs/*/*.err
+
+*.log
+*.txt
+*.err
+*.ckpt
+*.out
+*.progress
+*.progress.lock
+
 dataset
 out_models
 out_models_2
 # C extensions
+
+*.vec
 *.so
 
 # Distribution / packaging

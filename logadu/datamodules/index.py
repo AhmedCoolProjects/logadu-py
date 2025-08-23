@@ -1,140 +1,170 @@
-# READY TO USE ====================
+import os
 import pandas as pd
+import numpy as np
 import torch
 from torch.utils.data import TensorDataset, DataLoader
-from sklearn.model_selection import train_test_split
 import pytorch_lightning as pl
-import os
 import click
+# import optional
+from typing import Optional
 
 class IndexDataModule(pl.LightningDataModule):
     """
-    If Shuffle, then no chronological order is preserved between list of sequences.
-    If Remove Duplicates, then after sequencing, no two sequences will be the same with the same next event.
-    If Label Type is 'next', then the next event is used as the label.
+    DataModule for next-event prediction with optional deduplication.
+    - If shuffle=True: random (stratified) split (train/val on normal only, test mixed)
+    - If shuffle=False: chronological split (first 80% train/val (normal only), last 20% test)
+    - Dedup removes duplicate (sequence + next_event) pairs before splitting.
     """
-    def __init__(self, dataset_file: str, split_method: int = 1, window_size: int = 10, batch_size: int = 128, remove_duplicates: bool = True, label_type: str = 'next', shuffle: bool = True):
+    def __init__(
+        self,
+        dataset_file: str,
+        label_col: str,
+        content_col: str,
+        eventid_col: str,
+        window_size: int = 10,
+        batch_size: int = 128,
+        remove_duplicates: bool = True,
+        shuffle: bool = True,
+        # use optional
+        num_workers: Optional[int] = 1,
+        pin_memory: bool = True,
+        persistent_workers: Optional[bool] = None,
+
+    ):
         super().__init__()
-        self.num_workers = os.cpu_count() // 2 if os.cpu_count() else 4
         self.dataset_file = dataset_file
-        self.split_method = split_method
+        self.label_col = label_col
+        self.content_col = content_col
+        self.eventid_col = eventid_col
         self.window_size = window_size
         self.batch_size = batch_size
-        self.vocab_size = None
         self.remove_duplicates = remove_duplicates
         self.shuffle = shuffle
-        self.label_type = label_type  # 'next' for predicting next event, 'label' for binary classification
-        self.X_train, self.y_train = None, None
-        self.X_val, self.y_val = None, None
-        self.X_test, self.y_test = None, None
-        
-        
-    def setup(self, stage=None):
-        df = pd.read_csv(self.dataset_file, low_memory=False)
+        self.num_workers = max(1, (os.cpu_count() or 4) // 2)
+        self.pin_memory = pin_memory
+        self.persistent_workers = persistent_workers if persistent_workers is not None else (self.num_workers > 0)
+        # Will be filled in setup, use optional
+        self.vocab_size: Optional[int] = None
+        self.train_dataset: Optional[TensorDataset] = None
+        self.val_dataset: Optional[TensorDataset] = None
+        self.test_dataset: Optional[TensorDataset] = None
 
-        if self.split_method == 1:
-            if self.shuffle:
-                train_df, val_df, test_df, self.vocab_size = self._generate_sequences_dedup(df)
-            else:
-                train_df, val_df, test_df, self.vocab_size = self._generate_sequences_chronological(df)
+    def setup(self, stage: Optional[str] = None):
+        if self.train_dataset is not None:  # Already processed
+            return
+
+        usecols = [self.eventid_col, self.label_col]
+        df = pd.read_csv(self.dataset_file, usecols=usecols, low_memory=False)
+
+        # Factorize EventId to contiguous indices
+        codes, uniques = pd.factorize(df[self.eventid_col], sort=True) # codes: [0, 1, 2, ...], uniques: [event1, event2, ...]
+        self.vocab_size = len(uniques)
+        labels = df[self.label_col].to_numpy(dtype=np.int8) # labels: [0, 1, 1, ...]
+        del df  # free memory
+
+        if len(codes) <= self.window_size:
+            raise ValueError("Not enough events to form a single window.")
+
+        # Vectorized sliding windows
+        # windows shape: (N, window_size)
+        windows = np.lib.stride_tricks.sliding_window_view(codes, self.window_size) # windows: (N, window_size) N: is the number of windows
+        # the last window in windows won't be used since it won't have a coresponding next event, let's delete it
+        windows = windows[:-1]
+        next_events = codes[self.window_size:]  # shape (N,)
+        # Compute window labels: any anomaly inside the window
+        label_windows = np.lib.stride_tricks.sliding_window_view(labels, self.window_size)
+        label_windows = label_windows[:-1]
+        seq_labels = (label_windows.sum(axis=1) > 0).astype(np.int8)
+
+        # Align shape
+        click.secho(f"Windows shape: {windows.shape}, Next events shape: {next_events.shape}, Sequence labels shape: {seq_labels.shape}")
+        assert windows.shape[0] == next_events.shape[0] == seq_labels.shape[0]
+
+        # Optional dedup (sequence + next)
+        if self.remove_duplicates:
+            click.secho("Applying deduplication to (sequence, next) pairs (vectorized)...", fg="yellow")
+            combo = np.concatenate([windows, next_events[:, None]], axis=1)  # shape (N, window+1)
+            # np.unique axis=0 returns sorted unique rows and indices
+            unique_rows, unique_indices = np.unique(combo, axis=0, return_index=True)
+            # Preserve first occurrence order (np.unique returns sorted)
+            unique_indices_sorted = np.sort(unique_indices)
+            windows = windows[unique_indices_sorted]
+            next_events = next_events[unique_indices_sorted]
+            seq_labels = seq_labels[unique_indices_sorted]
+            click.echo(f"Number of sequences after deduplication: {len(windows)} / {len(codes)}")
+
+        # Split
+        if self.shuffle:
+            # Random stratified split (test 20%)
+            from sklearn.model_selection import train_test_split
+            idx_all = np.arange(len(windows))
+            train_val_idx, test_idx = train_test_split(
+                idx_all, test_size=0.2, random_state=42, stratify=seq_labels
+            )
+            # Train/val only normal
+            normal_mask = seq_labels[train_val_idx] == 0
+            normal_indices = train_val_idx[normal_mask]
+            train_idx, val_idx = train_test_split(
+                normal_indices, test_size=0.1, random_state=42
+            )
         else:
-            raise ValueError(f"Invalid split method: {self.split_method}. Supported methods are 1 Only for now.")
+            # Chronological: first 80% -> train/val candidate, last 20% test
+            n_total = len(windows)
+            train_val_end = int(n_total * 0.8)
+            idx_all = np.arange(len(windows))
+            train_val_idx = idx_all[:train_val_end]
+            test_idx = idx_all[train_val_end:]
+            normal_mask = seq_labels[train_val_idx] == 0
+            normal_indices = train_val_idx[normal_mask]
+            # 90/10 split inside normal_indices preserving order
+            split_point = int(len(normal_indices) * 0.9)
+            train_idx = normal_indices[:split_point]
+            val_idx = normal_indices[split_point:]
 
-        # Train set (normal only)
-        self.X_train = torch.tensor(train_df['sequence'].tolist(), dtype=torch.long)
-        self.y_train = torch.tensor(train_df['next'].tolist(), dtype=torch.long)
-        # Validation set (normal only)
-        self.X_val = torch.tensor(val_df['sequence'].tolist(), dtype=torch.long)
-        self.y_val = torch.tensor(val_df['next'].tolist(), dtype=torch.long)
-        # Test set (contains both normal and anomalous data)
-        self.X_test = torch.tensor(test_df['sequence'].tolist(), dtype=torch.long)
-        self.y_test_next = torch.tensor(test_df['next'].tolist(), dtype=torch.long)
-        self.y_test_label = torch.tensor(test_df['label'].tolist(), dtype=torch.long)
-        
+        # Build tensors
+        def to_tensor(idx):
+            return (
+                torch.as_tensor(windows[idx], dtype=torch.long),
+                torch.as_tensor(next_events[idx], dtype=torch.long),
+                torch.as_tensor(seq_labels[idx], dtype=torch.long),
+            )
+
+        X_train, y_train_next, _ = to_tensor(train_idx)
+        X_val, y_val_next, _ = to_tensor(val_idx)
+        X_test, y_test_next, y_test_label = to_tensor(test_idx)
+
+        self.train_dataset = TensorDataset(X_train, y_train_next)
+        self.val_dataset = TensorDataset(X_val, y_val_next)
+        # Test includes both next-event label and sequence anomaly label
+        self.test_dataset = TensorDataset(X_test, y_test_next, y_test_label)
+
+    # Dataloaders (only next-event prediction for training/validation)
     def train_dataloader(self):
-        if self.label_type == 'next':
-            return DataLoader(TensorDataset(self.X_train, self.y_train), batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
+        return DataLoader(
+            self.train_dataset,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=self.num_workers,
+            pin_memory=self.pin_memory,
+            persistent_workers=self.persistent_workers,
+        )
 
     def val_dataloader(self):
-        if self.label_type == 'next':
-            return DataLoader(TensorDataset(self.X_val, self.y_val), batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(
+            self.val_dataset,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+            pin_memory=self.pin_memory,
+            persistent_workers=self.persistent_workers,
+        )
 
     def test_dataloader(self):
-        if self.label_type == 'next':
-            return DataLoader(TensorDataset(self.X_test, self.y_test_next, self.y_test_label), batch_size=self.batch_size, num_workers=self.num_workers)
-
-
-
-    def _generate_sequences_chronological(self, df):
-        df['index'] = df['EventId'].astype('category').cat.codes
-        vocab_size = len(df['index'].unique())
-        
-        # --- 1. Generate ALL sequences chronologically FIRST ---
-        sequences, next_events, labels = [], [], []
-        for i in range(len(df) - self.window_size):
-            sequences.append(df['index'].iloc[i:i + self.window_size].tolist())
-            next_events.append(df['index'].iloc[i + self.window_size])
-            labels.append(1 if df['label'].iloc[i:i + self.window_size].any() else 0)
-            
-        data = pd.DataFrame({'sequence': sequences, 'next': next_events, 'label': labels})
-
-        # --- 2. (Optional) Deduplicate ---
-        if self.remove_duplicates:
-            click.secho("Applying deduplication to sequences...", fg="yellow")
-            data['seq_next_key'] = data.apply(lambda row: f"{row['sequence']}_{row['next']}", axis=1)
-            data = data.drop_duplicates(subset=['seq_next_key'], keep='first')
-            data = data.drop(columns=['seq_next_key']).reset_index(drop=True)
-            click.echo(f"Number of sequences after deduplication: {len(data)}")
-
-        # --- 3. Perform a CHRONOLOGICAL split on the (possibly deduplicated) sequences ---
-        n_total = len(data)
-        train_val_end = int(n_total * 0.8)
-
-        # train val df should contain only normal events
-        train_val_df = data.iloc[:train_val_end]
-        normal_train_val_df = train_val_df[train_val_df['label'] == 0]
-        val_end = int(len(normal_train_val_df) * 0.9)
-        # split
-        train_df = normal_train_val_df.iloc[:val_end]
-        val_df = normal_train_val_df.iloc[val_end:]
-        test_df = data.iloc[train_val_end:]
-        
-        return train_df, val_df, test_df, vocab_size
-
-
-    def _generate_sequences_dedup(self, df):
-        df['index'] = df['EventId'].astype('category').cat.codes
-        vocab_size = len(df['index'].unique())
-        # 1. create sequences with step=1, next event, and label of the sequence
-        sequences, next_events, labels = [], [], []
-        for i in range(len(df) - self.window_size):
-            sequence = df['index'].iloc[i:i + self.window_size].tolist()
-            next_event = df['index'].iloc[i + self.window_size]
-            label = 1 if df['label'].iloc[i:i + self.window_size].any() else 0
-            
-            sequences.append(sequence)
-            next_events.append(next_event)
-            labels.append(label)
-        # 2. create a DataFrame with the sequences, next events, and labels
-        data = pd.DataFrame({'sequence': sequences, 'next': next_events, 'label': labels})
-
-        
-        # --- 2. (Optional) Deduplicate ---
-        if self.remove_duplicates:
-            click.secho("Applying deduplication to sequences...", fg="yellow")
-            data['seq_next_key'] = data.apply(lambda row: f"{row['sequence']}_{row['next']}", axis=1)
-            data = data.drop_duplicates(subset=['seq_next_key'], keep='first')
-            data = data.drop(columns=['seq_next_key']).reset_index(drop=True)
-            click.echo(f"Number of sequences after deduplication: {len(data)}")
-        
-        
-        # 4. split into train, val, and test sets
-        train_val_df, test_df = train_test_split(data, test_size=0.2, random_state=42, stratify=data['label'])
-        normal_train_val_df = train_val_df[train_val_df['label'] == 0]
-        train_df, val_df = train_test_split(normal_train_val_df, test_size=0.1, random_state=42)
-        # 5. reset index
-        train_df = train_df.reset_index(drop=True)
-        val_df = val_df.reset_index(drop=True)
-        test_df = test_df.reset_index(drop=True)
-        # 6. return the DataFrames and vocab_size
-        return train_df, val_df, test_df, vocab_size
+        return DataLoader(
+            self.test_dataset,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+            pin_memory=self.pin_memory,
+            persistent_workers=self.persistent_workers,
+        )
